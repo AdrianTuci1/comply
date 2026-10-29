@@ -2,7 +2,7 @@ name: comply
 
 services:
   comply:
-    image: ${COMPLY_IMAGE:-ghcr.io/comply/comply:latest}
+    image: ${COMPLY_IMAGE:-ghcr.io/adriantuci1/comply:latest}
     restart: unless-stopped
     env_file:
       - .env

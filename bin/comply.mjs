@@ -4,7 +4,7 @@ import { mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const VERSION = "0.1.0";
-const DEFAULT_IMAGE = "ghcr.io/comply/comply:latest";
+const DEFAULT_IMAGE = "ghcr.io/adriantuci1/comply:latest";
 
 const args = process.argv.slice(2);
 const flags = new Map();
@@ -77,7 +77,9 @@ if (docker.status !== 0) {
 }
 
 const port = flags.get("port") || process.env.PORT || "8080";
-const dataDir = resolve(flags.get("data") || process.env.COMPLY_DATA_DIR_HOST || "comply-data");
+const dataDir = resolve(
+  flags.get("data") || process.env.COMPLY_DATA_DIR_HOST || "comply-data",
+);
 const image = flags.get("image") || process.env.COMPLY_IMAGE || DEFAULT_IMAGE;
 mkdirSync(dataDir, { recursive: true });
 
@@ -101,6 +103,8 @@ for (const [key, value] of Object.entries(process.env)) {
 }
 
 dockerArgs.push(image);
-console.log(`Starting Comply on http://localhost:${port} with data in ${dataDir}`);
+console.log(
+  `Starting Comply on http://localhost:${port} with data in ${dataDir}`,
+);
 const run = spawnSync("docker", dockerArgs, { stdio: "inherit" });
 process.exit(run.status ?? 1);

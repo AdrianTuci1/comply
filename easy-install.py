@@ -20,7 +20,7 @@ import urllib.request
 from pathlib import Path
 from urllib.parse import urlparse
 
-DEFAULT_IMAGE = "ghcr.io/comply/comply"
+DEFAULT_IMAGE = "ghcr.io/adriantuci1/comply"
 DEFAULT_VERSION = "latest"
 DEFAULT_PORT = 8080
 

@@ -47,12 +47,12 @@ the production paths are Docker on your server and Azure Functions in your subsc
 Requirements: Docker Engine with Compose v2 and Python 3.8+.
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/comply/comply/main/easy-install.py
+curl -fsSLO https://raw.githubusercontent.com/AdrianTuci1/comply/main/easy-install.py
 python3 easy-install.py deploy --sitename=comply.example.com
 ```
 
 The script writes a Compose project, generates `COMPLY_AUTH_SECRET`, pulls
-`ghcr.io/comply/comply:latest`, and waits for `/healthz`. It does not create an account.
+`ghcr.io/adriantuci1/comply:latest`, and waits for `/healthz`. It does not create an account.
 Open the URL and create the first account; that account becomes the administrator.
 
 Useful options:
@@ -84,21 +84,21 @@ For a trial without a TLS proxy, pass a full URL:
 ```bash
 mkdir comply && cd comply
 
-curl -fsSLO https://raw.githubusercontent.com/comply/comply/main/deploy/docker-compose.yml
-curl -fsSLO https://raw.githubusercontent.com/comply/comply/main/deploy/init.sh
+curl -fsSLO https://raw.githubusercontent.com/AdrianTuci1/comply/main/deploy/docker-compose.yml
+curl -fsSLO https://raw.githubusercontent.com/AdrianTuci1/comply/main/deploy/init.sh
 chmod +x init.sh
 
 COMPLY_SITENAME=comply.example.com ./init.sh
 ```
 
 `init.sh` writes `.env` with a random session secret, starts the container, and prints the
-URL. To choose a release, set `COMPLY_IMAGE=ghcr.io/comply/comply:v0.1.0` before running
+URL. To choose a release, set `COMPLY_IMAGE=ghcr.io/adriantuci1/comply:v0.1.0` before running
 it. The repository publishes the image with
 [`.github/workflows/publish-image.yml`](.github/workflows/publish-image.yml) on every push
 to `main` and on version tags.
 
-Replace `comply/comply` in the URLs and image name with your GitHub owner and repository
-when you run a fork.
+The commands use `AdrianTuci1/comply`. Replace the owner and repository in the URLs and
+image name when you run a fork.
 
 ### Reverse proxy and TLS
 
@@ -233,7 +233,7 @@ The same image runs without Compose:
 docker run --rm -p 8080:8080 \
   -e COMPLY_AUTH_SECRET=change-me \
   -v comply-data:/app/data \
-  ghcr.io/comply/comply:latest
+  ghcr.io/adriantuci1/comply:latest
 ```
 
 Or through the published launcher:
