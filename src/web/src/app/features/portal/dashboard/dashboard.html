@@ -1,0 +1,142 @@
+<app-page-header
+  eyebrow="Portal"
+  title="Dashboard"
+  [subtitle]="'Compliance status for ' + organization().name"
+>
+  <a class="btn" routerLink="/workspace/boards">
+    <app-icon name="boards" [size]="16" />
+    View boards
+  </a>
+  <a class="btn btn--primary" routerLink="/workspace/boards">
+    <app-icon name="plus" [size]="16" />
+    New board
+  </a>
+</app-page-header>
+
+<section class="stats" aria-label="Key metrics">
+  <app-stat-card
+    label="Active users"
+    [value]="activeMembers()"
+    [hint]="'of ' + members().length + ' members'"
+    icon="users"
+    tone="info"
+  />
+  <app-stat-card
+    label="Active boards"
+    [value]="activeBoards()"
+    [hint]="boards().length + ' boards in total'"
+    icon="boards"
+  />
+  <app-stat-card
+    label="Average coverage"
+    [value]="coverage() + '%'"
+    hint="weighted by requirements"
+    icon="shield"
+    tone="success"
+  />
+  <app-stat-card
+    label="Open gaps"
+    [value]="openGaps()"
+    hint="requirements without accepted evidence"
+    icon="alert"
+    tone="danger"
+  />
+</section>
+
+<div class="layout">
+  <section class="card">
+    <div class="card__head">
+      <h2 class="card__title">Recent boards</h2>
+      <a class="card__link" routerLink="/workspace/boards">
+        View all
+        <app-icon name="arrow-right" [size]="14" />
+      </a>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Board</th>
+            <th>Framework</th>
+            <th>Status</th>
+            <th>Coverage</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (board of recentBoards(); track board.id) {
+            <tr>
+              <td>
+                <a class="board-link" [routerLink]="['/workspace/boards', board.id]">
+                  {{ board.name }}
+                </a>
+                <p class="board-sub">{{ year(board.periodFrom) }}–{{ year(board.periodTo) }}</p>
+              </td>
+              <td>
+                <span class="fw">{{ board.framework.label }}</span>
+              </td>
+              <td><app-status-badge kind="board" [status]="board.status" /></td>
+              <td>
+                <div class="coverage">
+                  <app-progress-bar [value]="coverageOf(board)" />
+                  <span class="num">{{ coverageOf(board) }}%</span>
+                </div>
+              </td>
+              <td class="muted">{{ relativeTime(board.updatedAt) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="side">
+    <section class="card">
+      <div class="card__head">
+        <h2 class="card__title">Activity</h2>
+      </div>
+      <div class="card__body">
+        <ol class="feed">
+          @for (row of activity(); track row.id) {
+            <li class="feed__item">
+              <span [class]="'feed__dot feed__dot--' + row.status"></span>
+              <div class="feed__body">
+                <p class="feed__title">{{ row.title }}</p>
+                <p class="feed__meta">
+                  {{ row.boardName }} · {{ row.statusLabel }} · {{ relativeTime(row.updatedAt) }}
+                </p>
+              </div>
+            </li>
+          }
+        </ol>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head">
+        <h2 class="card__title">Expiring soon</h2>
+        <span class="soft" style="font-size: 12px">90 days</span>
+      </div>
+      <div class="card__body">
+        @if (expiring().length === 0) {
+          <p class="muted" style="font-size: 13px">No evidence expires in the coming period.</p>
+        } @else {
+          <ul class="expiring">
+            @for (item of expiring(); track item.id) {
+              <li>
+                <div>
+                  <p class="expiring__title">{{ item.title }}</p>
+                  <p class="expiring__meta">{{ item.boardName }}</p>
+                </div>
+                <span class="expiring__days" [class.expiring__days--soon]="item.daysLeft <= 30">
+                  {{ item.daysLeft }} d
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </section>
+  </div>
+</div>

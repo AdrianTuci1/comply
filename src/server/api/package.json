@@ -1,0 +1,16 @@
+{
+  "name": "comply-api",
+  "private": true,
+  "type": "module",
+  "description": "Local API for the Comply content library, ingestion pipeline and email-link sessions.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "ingest": "node cli.mjs ingest",
+    "ingest:seed": "node cli.mjs ingest --all --seed",
+    "list": "node cli.mjs list",
+    "test": "node --test test/*.test.mjs"
+  }
+}

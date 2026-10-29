@@ -1,0 +1,88 @@
+@if (mobileOpen()) {
+  <button type="button" class="scrim" aria-label="Close menu" (click)="closeMobileNav()"></button>
+}
+
+<aside class="sidebar" id="app-sidebar" [class.is-open]="mobileOpen()">
+  <nav class="nav" aria-label="Main navigation">
+    <p class="nav__label">Portal</p>
+
+    <a
+      class="nav__item"
+      routerLink="/portal/dashboard"
+      routerLinkActive="is-active"
+      (click)="closeMobileNav()"
+    >
+      <app-icon name="dashboard" [size]="17" />
+      <span>Dashboard</span>
+    </a>
+    <a
+      class="nav__item"
+      routerLink="/portal/users"
+      routerLinkActive="is-active"
+      (click)="closeMobileNav()"
+    >
+      <app-icon name="users" [size]="17" />
+      <span>Users</span>
+    </a>
+    <a
+      class="nav__item"
+      routerLink="/portal/website"
+      routerLinkActive="is-active"
+      (click)="closeMobileNav()"
+    >
+      <app-icon name="globe" [size]="17" />
+      <span>Trust website</span>
+    </a>
+    <a
+      class="nav__item"
+      routerLink="/portal/settings"
+      routerLinkActive="is-active"
+      (click)="closeMobileNav()"
+    >
+      <app-icon name="settings" [size]="17" />
+      <span>Settings</span>
+    </a>
+
+    <p class="nav__label nav__label--spaced">Workspace</p>
+
+    <a
+      class="nav__item"
+      routerLink="/workspace/sources"
+      routerLinkActive="is-active"
+      (click)="closeMobileNav()"
+    >
+      <app-icon name="book" [size]="17" />
+      <span>Sources and requirements</span>
+    </a>
+    <a
+      class="nav__item"
+      routerLink="/workspace/boards"
+      routerLinkActive="is-active"
+      (click)="closeMobileNav()"
+    >
+      <app-icon name="boards" [size]="17" />
+      <span>Assessment boards</span>
+    </a>
+    <a
+      class="nav__item"
+      routerLink="/workspace/agent"
+      routerLinkActive="is-active"
+      (click)="closeMobileNav()"
+    >
+      <app-icon name="bot" [size]="17" />
+      <span>Agent guide</span>
+    </a>
+  </nav>
+
+  <div class="sidebar__foot">
+    <div class="plan">
+      <div class="plan__head">
+        <span class="plan__name">Plan {{ planLabel() }}</span>
+        <span class="plan__usage">{{ boardCount() }} / {{ boardLimit() }}</span>
+      </div>
+      <p class="plan__hint">Boards used from the monthly quota</p>
+      <div class="plan__bar"><span [style.width.%]="usage()"></span></div>
+      <a class="plan__link" routerLink="/portal/settings" (click)="closeMobileNav()">Manage plan</a>
+    </div>
+  </div>
+</aside>

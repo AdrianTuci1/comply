@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="196" height="40" viewBox="0 0 196 40" role="img" aria-label="Nordwind Logistics">
+  <rect width="40" height="40" rx="10" fill="#0f9d76"/>
+  <path d="M11 29V12l9 10 9-10v17" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="52" y="24" fill="#101828" font-family="ui-sans-serif, -apple-system, 'Segoe UI', sans-serif" font-size="15" font-weight="700" letter-spacing="-0.2">Nordwind</text>
+  <text x="52" y="35" fill="#667085" font-family="ui-sans-serif, -apple-system, 'Segoe UI', sans-serif" font-size="7" font-weight="600" letter-spacing="2.1">LOGISTICS</text>
+</svg>

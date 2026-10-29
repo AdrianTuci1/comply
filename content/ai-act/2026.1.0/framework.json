@@ -1,0 +1,10 @@
+{
+  "id": "ai-act/2026.1.0",
+  "frameworkId": "ai-act",
+  "version": "2026.1.0",
+  "docType": "framework",
+  "title": "EU AI Act — Regulamentul (UE) 2024/1689",
+  "effectiveFrom": "2024-08-01",
+  "source": "Regulamentul (UE) 2024/1689 privind inteligența artificială",
+  "license": "public"
+}

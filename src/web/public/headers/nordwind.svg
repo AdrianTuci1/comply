@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="400" viewBox="0 0 1600 400" role="img" aria-label="Nordwind banner">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07120f" />
+      <stop offset="0.55" stop-color="#0b211a" />
+      <stop offset="1" stop-color="#12352a" />
+    </linearGradient>
+    <linearGradient id="shape" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#35d39b" />
+      <stop offset="1" stop-color="#0f9d76" />
+    </linearGradient>
+    <linearGradient id="shapeSoft" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8ff0c9" stop-opacity="0.55" />
+      <stop offset="1" stop-color="#35d39b" stop-opacity="0.08" />
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="400" fill="url(#bg)" />
+  <circle cx="1310" cy="70" r="330" fill="url(#shapeSoft)" />
+  <path d="M900 400 L1130 120 L1360 400 Z" fill="url(#shape)" opacity="0.9" />
+  <path d="M1160 400 L1340 200 L1520 400 Z" fill="#0b211a" opacity="0.75" />
+  <path d="M720 400 L860 240 L1000 400 Z" fill="url(#shape)" opacity="0.45" />
+  <path d="M60 400 L210 250 L360 400 Z" fill="url(#shape)" opacity="0.18" />
+  <g opacity="0.22" stroke="#8ff0c9" stroke-width="1">
+    <path d="M0 100h1600M0 200h1600M0 300h1600" />
+    <path d="M200 0v400M400 0v400M600 0v400M800 0v400M1000 0v400M1200 0v400M1400 0v400" />
+  </g>
+</svg>

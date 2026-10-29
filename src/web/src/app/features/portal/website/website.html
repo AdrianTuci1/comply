@@ -1,0 +1,346 @@
+<app-page-header
+  eyebrow="Portal"
+  title="Trust website"
+  [subtitle]="'The public page for ' + organization().name + ', generated from approved evidence'"
+>
+  <button type="button" class="btn" (click)="copyLink()">
+    <app-icon [name]="copied() ? 'check' : 'copy'" [size]="16" />
+    {{ copied() ? 'Link copied' : 'Copy link' }}
+  </button>
+  <a class="btn btn--primary" [href]="'/t/' + organization().slug" target="_blank" rel="noreferrer">
+    <app-icon name="external" [size]="16" />
+    Open page
+  </a>
+</app-page-header>
+
+<div class="web-grid">
+  <section class="card">
+    <div class="card__head">
+      <h2 class="card__title">Preview</h2>
+      <app-status-badge [status]="settings().published ? 'published' : 'draft'" kind="publish" />
+    </div>
+
+    <div class="preview">
+      <div class="browser">
+        <div class="browser__bar">
+          <span class="browser__dots"><i></i><i></i><i></i></span>
+          <span class="browser__url">
+            <app-icon name="shield" [size]="12" />
+            {{ settings().domain }}
+          </span>
+        </div>
+        <div class="browser__page">
+          <div class="mini-brand">
+            <span class="mini-brand__mark">{{ organization().initials }}</span>
+            <span>{{ organization().name }}</span>
+          </div>
+          @if (settings().headerUrl; as banner) {
+            <img class="mini-banner" [src]="banner" alt="" />
+          } @else {
+            <h3>Trust center</h3>
+            <p class="mini-sub">
+              How we protect data, how we operate infrastructure, and what we do when something goes
+              wrong.
+            </p>
+          }
+
+          <div class="mini-categories">
+            @for (category of categories; track category.key) {
+              <span class="mini-chip">{{ category.label }}</span>
+            }
+          </div>
+
+          <div class="mini-claim">
+            <app-icon name="check" [size]="15" />
+            <div>
+              <strong>Evidence published</strong>
+              <p>{{ publicCount() }} public statements · reviewed monthly</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      @if (!settings().published) {
+        <p class="preview__note">
+          <app-icon name="alert" [size]="15" />
+          The page is not published. Visitors receive a 404 response.
+        </p>
+      }
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card__head">
+      <h2 class="card__title">Publishing settings</h2>
+    </div>
+    <div class="card__body settings">
+      <div class="field">
+        <span class="field__label">Header</span>
+        <div class="header-setting">
+          <span class="header-setting__preview">
+            @if (settings().headerUrl; as banner) {
+              <img [src]="banner" alt="Organization header" />
+            } @else {
+              <span class="logo-setting__empty">No header</span>
+            }
+          </span>
+          <div class="logo-setting__actions">
+            <label class="btn logo-setting__upload">
+              Upload header
+              <input type="file" accept="image/*" (change)="uploadHeader($event)" />
+            </label>
+            @if (settings().headerUrl) {
+              <button type="button" class="btn" (click)="removeHeader()">Remove</button>
+            }
+          </div>
+        </div>
+        <span class="field__hint">
+          The large image in the public page hero, under the topbar. Keep it free of overlaid text.
+          Recommended 1600×400 px, SVG, PNG, or JPG, maximum 512 KB.
+        </span>
+        @if (headerError()) {
+          <span class="logo-setting__error">{{ headerError() }}</span>
+        }
+      </div>
+
+      <div class="field">
+        <span class="field__label">Logo</span>
+        <div class="logo-setting">
+          <span class="logo-setting__preview">
+            @if (settings().logoUrl; as logo) {
+              <img [src]="logo" alt="Organization logo" />
+            } @else {
+              <span class="logo-setting__empty">No logo</span>
+            }
+          </span>
+          <div class="logo-setting__actions">
+            <label class="btn logo-setting__upload">
+              Upload logo
+              <input type="file" accept="image/*" (change)="uploadLogo($event)" />
+            </label>
+            @if (settings().logoUrl) {
+              <button type="button" class="btn" (click)="removeLogo()">Remove</button>
+            }
+          </div>
+        </div>
+        <span class="field__hint">
+          Appears alone in the public page header, with no text beside it. SVG, PNG, or JPG, maximum
+          512 KB.
+        </span>
+        @if (logoError()) {
+          <span class="logo-setting__error">{{ logoError() }}</span>
+        }
+      </div>
+
+      <label class="field">
+        <span class="field__label">Domain</span>
+        <input
+          class="input"
+          type="text"
+          [value]="settings().domain"
+          (change)="setDomain($any($event.target).value)"
+        />
+        <span class="field__hint"
+          >You can use your own subdomain or the route /t/{{ organization().slug }}.</span
+        >
+      </label>
+
+      <div class="setting">
+        <div>
+          <p class="setting__title">Publish the page</p>
+          <p class="setting__hint">Visitors can open the page without signing in.</p>
+        </div>
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          [attr.aria-checked]="settings().published"
+          [class.is-on]="settings().published"
+          (click)="toggle('published')"
+        >
+          <span></span>
+        </button>
+      </div>
+
+      <div class="setting">
+        <div>
+          <p class="setting__title">Show evidence counts</p>
+          <p class="setting__hint">Show how many artifacts support each claim.</p>
+        </div>
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          [attr.aria-checked]="settings().showEvidence"
+          [class.is-on]="settings().showEvidence"
+          (click)="toggle('showEvidence')"
+        >
+          <span></span>
+        </button>
+      </div>
+
+      <div class="setting">
+        <div>
+          <p class="setting__title">Allow requests under NDA</p>
+          <p class="setting__hint">Visitors can request full reports through the form.</p>
+        </div>
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          [attr.aria-checked]="settings().allowNda"
+          [class.is-on]="settings().allowNda"
+          (click)="toggle('allowNda')"
+        >
+          <span></span>
+        </button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="web-grid web-grid--lower">
+  <section class="card">
+    <div class="card__head">
+      <h2 class="card__title">Published claims</h2>
+      <span class="soft" style="font-size: 12px">{{ claims().length }} claims</span>
+    </div>
+    <ul class="claims">
+      @for (claim of claims(); track claim.id) {
+        <li class="claim">
+          <div class="claim__main">
+            <p class="claim__title">{{ claim.title }}</p>
+            <p class="claim__meta">
+              {{ categoryLabels[claim.category] }} · approved {{ formatDate(claim.approvedAt) }}
+            </p>
+          </div>
+          <span class="vis" [class]="'vis vis--' + claim.visibility">
+            {{ visibilityLabels[claim.visibility] }}
+          </span>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <section class="card">
+    <div class="card__head">
+      <h2 class="card__title">Domain connection</h2>
+      <app-status-badge class="domain-status" kind="domain" [status]="domainStatus()" />
+    </div>
+    <div class="card__body hosting">
+      <p class="hosting__text">
+        Connect the public domain to the trust page. Add the records at your DNS provider, then
+        verify ownership.
+      </p>
+
+      <label class="field">
+        <span class="field__label">Deployment mode</span>
+        <select
+          class="select"
+          [value]="deploymentMode()"
+          (change)="setDeploymentMode($any($event.target).value)"
+        >
+          <option value="managed">{{ deploymentLabels.managed }}</option>
+          <option value="self_hosted">{{ deploymentLabels.self_hosted }}</option>
+        </select>
+        <span class="field__hint">
+          @if (deploymentMode() === 'self_hosted') {
+            Your container serves the page at <code>/t/{{ organization().slug }}</code
+            >. Point the CNAME at your ingress and terminate TLS there.
+          } @else {
+            Comply's edge serves the page at this domain, provisions TLS, and caches it. Your
+            infrastructure does not render it.
+          }
+        </span>
+      </label>
+
+      <div class="hosting__mode">
+        <h3>
+          {{
+            deploymentMode() === 'self_hosted'
+              ? 'Serving from your infrastructure'
+              : 'Served by the Comply edge'
+          }}
+        </h3>
+        @if (deploymentMode() === 'self_hosted') {
+          <p>
+            The self-hosted image contains the portal and the public trust page. Route the trust
+            hostname to the same container; a request to <code>/</code> opens
+            <code>/t/{{ organization().slug }}</code> when the host and slug are configured.
+          </p>
+          <pre class="hosting__code"><code>docker run -d -p 8080:8080 \
+  -e COMPLY_PUBLIC_URL=https://{{ settings().domain }} \
+  -e COMPLY_TRUST_HOST={{ settings().domain }} \
+  -e COMPLY_TRUST_SLUG={{ organization().slug }} \
+  -e COMPLY_AUTH_SECRET=... \
+  -v comply-data:/app/data \
+  ghcr.io/comply/comply:latest</code></pre>
+          <p class="hosting__hint">
+            Put the container behind your reverse proxy, terminate TLS there, and keep the auth
+            secret in a secret manager. No Comply edge is involved in this mode.
+          </p>
+        } @else {
+          <p>
+            The CNAME points to <code>edge.comply.app</code>. Comply serves
+            <code>/t/{{ organization().slug }}</code> on this domain, renews the certificate, and
+            keeps the trust page separate from your internal workspace.
+          </p>
+          <p class="hosting__hint">
+            Switch to self-hosted when the page must run inside your network; the records and the
+            verification token stay the same.
+          </p>
+        }
+      </div>
+
+      <div class="dns">
+        <div class="dns__row">
+          <span class="dns__type">CNAME</span>
+          <code>{{ settings().domain }}</code>
+          <span class="dns__arrow">→</span>
+          <code>{{
+            deploymentMode() === 'managed' ? 'edge.comply.app' : 'your ingress hostname'
+          }}</code>
+        </div>
+        <div class="dns__row">
+          <span class="dns__type">TXT</span>
+          <code>_comply.{{ settings().domain }}</code>
+          <span class="dns__arrow">→</span>
+          <code class="dns__token">{{ domainToken() || 'Generating…' }}</code>
+        </div>
+      </div>
+
+      <div class="hosting__token">
+        <span class="field__label">Verification token</span>
+        <div class="hosting__token-row">
+          <code>{{ domainToken() || '—' }}</code>
+          <button type="button" class="btn btn--sm" (click)="copyToken()">
+            <app-icon [name]="copiedField() === 'token' ? 'check' : 'copy'" [size]="14" />
+            {{ copiedField() === 'token' ? 'Copied' : 'Copy' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="hosting__actions">
+        @if (domainStatus() === 'verified') {
+          <button type="button" class="btn btn--sm" (click)="resetDomain()">
+            Reset verification
+          </button>
+        } @else {
+          <button type="button" class="btn btn--sm" (click)="beginDomainCheck()">Check DNS</button>
+          <button type="button" class="btn btn--sm btn--primary" (click)="verifyDomain()">
+            Confirm ownership (demo)
+          </button>
+        }
+      </div>
+
+      @if (domainError()) {
+        <p class="hosting__error" role="alert">{{ domainError() }}</p>
+      }
+
+      <p class="hosting__hint">
+        Verification in this demo runs locally, without real DNS queries. In production, Comply
+        reads the records through the Azure resolver and renews the certificate automatically.
+      </p>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,12 @@
+name: comply
+
+services:
+  comply:
+    image: ${COMPLY_IMAGE:-ghcr.io/comply/comply:latest}
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    volumes:
+      - "./data:/app/data"

@@ -1,0 +1,292 @@
+<app-page-header
+  eyebrow="Workspace"
+  title="Sources and requirements"
+  [subtitle]="
+    totalRequirements() +
+    ' requirements across ' +
+    sources().length +
+    ' official sources · content managed by Comply'
+  "
+>
+  <span class="managed-pill">
+    <app-icon name="check" [size]="14" />
+    Managed content
+  </span>
+</app-page-header>
+
+<div class="ingest-bar">
+  <span class="ingest-bar__state">
+    <app-icon name="clock" [size]="14" />
+    {{ scheduleLabel() }}
+  </span>
+  <button
+    type="button"
+    class="btn btn--sm"
+    [disabled]="refreshBusy()"
+    (click)="refreshFromSources()"
+  >
+    <app-icon name="download" [size]="14" />
+    {{ refreshBusy() ? 'Refreshing…' : 'Refresh now' }}
+  </button>
+</div>
+
+@if (notice()) {
+  <div class="notice" [class.notice--error]="noticeTone() === 'error'" role="status">
+    <app-icon [name]="noticeTone() === 'error' ? 'alert' : 'check'" [size]="16" />
+    <span>{{ notice() }}</span>
+    <button
+      type="button"
+      class="btn btn--icon"
+      aria-label="Dismiss message"
+      (click)="notice.set('')"
+    >
+      <app-icon name="x" [size]="15" />
+    </button>
+  </div>
+}
+
+<section class="framework-grid" aria-label="Framework coverage">
+  @for (card of frameworkCards(); track card.id) {
+    <button
+      type="button"
+      class="card framework-card"
+      [class.is-active]="frameworkFilter() === card.id"
+      [attr.aria-pressed]="frameworkFilter() === card.id"
+      (click)="selectFramework(card.id)"
+    >
+      <div class="framework-card__head">
+        <span class="framework-card__mark">{{ monograms[card.id] }}</span>
+        <span class="framework-card__name">{{ card.label }}</span>
+      </div>
+      <p class="framework-card__version">
+        {{ card.version }} · {{ card.sources }} {{ card.sources === 1 ? 'source' : 'sources' }}
+      </p>
+
+      <div class="framework-card__stats">
+        <span
+          ><strong>{{ card.requirements }}</strong> requirements</span
+        >
+      </div>
+
+      <p class="framework-card__hint">Managed content, refreshed automatically</p>
+    </button>
+  }
+</section>
+
+<section class="card sources">
+  <div class="card__head">
+    <div class="head-group">
+      <h2 class="card__title">Documented sources</h2>
+      <span class="count">{{ visibleSources().length }}</span>
+    </div>
+    @if (frameworkFilter() !== 'all') {
+      <button type="button" class="btn btn--sm btn--ghost" (click)="clearFramework()">
+        <app-icon name="x" [size]="13" />
+        All frameworks
+      </button>
+    } @else {
+      <span class="soft">Select a source to see its requirements</span>
+    }
+  </div>
+
+  @if (visibleSources().length === 0) {
+    <app-empty-state
+      icon="book"
+      title="No sources for this framework"
+      message="Managed content for this framework is not available yet."
+    />
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Document</th>
+            <th>Framework</th>
+            <th>Version</th>
+            <th>License</th>
+            <th class="num">Requirements</th>
+            <th>Last refresh</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (source of visibleSources(); track source.id) {
+            <tr class="source-row" [class.is-selected]="sourceFilter() === source.id">
+              <td>
+                <button type="button" class="source-link" (click)="selectSource(source.id)">
+                  <span class="source-link__title">{{ source.title }}</span>
+                  <span class="source-link__meta">
+                    {{ source.publisher }} · {{ kindLabels[source.kind] }}
+                  </span>
+                </button>
+              </td>
+              <td>
+                <span class="fw">{{ frameworkLabels[source.frameworkId] }}</span>
+              </td>
+              <td class="num">{{ source.version }}</td>
+              <td>
+                <span class="license" [class.license--proprietary]="source.isProprietary">
+                  {{ licenseLabels[source.license] }}
+                </span>
+              </td>
+              <td class="num">{{ countFor(source.id) }}</td>
+              <td class="muted">
+                @if (documentFor(source.id)?.fetchedAt; as fetched) {
+                  {{ formatDate(fetched) }}
+                } @else {
+                  —
+                }
+              </td>
+              <td class="row-actions">
+                @if (documentFor(source.id); as document) {
+                  <button
+                    type="button"
+                    class="btn btn--sm"
+                    (click)="openDocument(source.id)"
+                    [attr.aria-label]="'Open document ' + document.title"
+                  >
+                    Document
+                  </button>
+                }
+                <button type="button" class="btn btn--sm" (click)="selectSource(source.id)">
+                  View requirements
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<section class="card requirements" id="requirements">
+  <div class="card__head card__head--wrap">
+    <div class="head-group">
+      <h2 class="card__title">Extracted requirements</h2>
+      <span class="count">{{ filteredRequirements().length }}</span>
+      @if (selectedSource(); as source) {
+        <span class="selected-source">{{ source.title }}</span>
+      }
+    </div>
+
+    <div class="req-tools">
+      <label class="search">
+        <span class="visually-hidden">Search requirements</span>
+        <app-icon name="search" [size]="16" />
+        <input
+          class="input"
+          type="search"
+          placeholder="Search reference, title, or text"
+          [value]="query()"
+          (input)="setQuery($any($event.target).value)"
+        />
+      </label>
+      <select
+        class="select req-tools__select"
+        aria-label="Filter by source"
+        [value]="sourceFilter()"
+        (change)="setSource($any($event.target).value)"
+      >
+        <option value="all">All sources</option>
+        @for (source of visibleSources(); track source.id) {
+          <option [value]="source.id">{{ source.title }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  @if (filteredRequirements().length === 0) {
+    <app-empty-state
+      icon="search"
+      title="No requirements match the current filters"
+      message="Change the framework or source, or clear the search."
+    />
+  } @else {
+    <div class="table-wrap">
+      <table class="table requirements__table">
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>Requirement</th>
+            <th>Theme</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (requirement of pagedRequirements(); track requirement.id) {
+            <tr class="req-row">
+              <td>
+                <code class="ref">{{ requirement.ref }}</code>
+              </td>
+              <td class="req-title">
+                <p>{{ requirement.title }}</p>
+                <span class="req-title__text">{{ requirement.text }}</span>
+              </td>
+              <td>
+                <span class="theme">{{ themeLabels[requirement.theme] }}</span>
+              </td>
+              <td class="source-cell">{{ sourceTitles().get(requirement.sourceId) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <app-pagination
+      [page]="currentPage()"
+      [pageSize]="pageSize"
+      [total]="filteredRequirements().length"
+      label="requirements"
+      preposition="of"
+      previousLabel="Previous page"
+      nextLabel="Next page"
+      (pageChange)="page.set($event)"
+    />
+  }
+</section>
+
+@if (documentOpen()) {
+  <app-modal
+    [title]="activeDocument()?.title ?? 'Source document'"
+    [wide]="true"
+    (close)="closeDocument()"
+  >
+    @if (documentBusy()) {
+      <p class="doc-state">Loading the document from the backend…</p>
+    } @else if (documentError()) {
+      <p class="form-error" role="alert">{{ documentError() }}</p>
+    } @else if (activeDocument(); as document) {
+      <div class="doc-meta">
+        <span>{{ frameworkLabels[document.frameworkId] }}</span>
+        <span>Fetched {{ formatDate(document.fetchedAt) }}</span>
+        <span>{{ document.pages.length }} pages</span>
+        <span class="doc-meta__hash">sha256 {{ document.sha256.slice(0, 12) }}…</span>
+        <a [href]="document.officialUrl ?? document.url" target="_blank" rel="noreferrer">
+          Official text
+          <app-icon name="external" [size]="13" />
+        </a>
+        <a [href]="document.url" target="_blank" rel="noreferrer">
+          Index
+          <app-icon name="external" [size]="13" />
+        </a>
+      </div>
+
+      <div class="doc-pages">
+        @for (page of document.pages; track page.ref) {
+          <details class="doc-page">
+            <summary>
+              <span class="doc-page__ref">{{ page.ref }}</span>
+              <span class="doc-page__title">{{ page.title }}</span>
+            </summary>
+            <p class="doc-page__text">{{ page.text }}</p>
+            <a class="doc-page__link" [href]="page.url" target="_blank" rel="noreferrer">
+              View the original
+              <app-icon name="external" [size]="12" />
+            </a>
+          </details>
+        }
+      </div>
+    }
+  </app-modal>
+}

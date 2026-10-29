@@ -1,0 +1,172 @@
+@if (pageTenant(); as t) {
+  <div class="trust">
+    <app-trust-header [tenantName]="t.name" [logoUrl]="t.trustCenter.logoUrl" [slug]="t.slug" />
+
+    <section
+      class="hero"
+      [class.hero--image]="!!t.trustCenter.headerUrl"
+      aria-labelledby="trust-title"
+    >
+      @if (t.trustCenter.headerUrl; as banner) {
+        <h1 class="visually-hidden" id="trust-title">Trust, built on evidence</h1>
+        <img class="hero__banner" [src]="banner" [alt]="t.name + ' header'" />
+      } @else {
+        <div class="hero__inner">
+          <div class="hero__copy">
+            <p class="hero__eyebrow">Trust center</p>
+            <h1 id="trust-title">Trust, built on evidence</h1>
+            <p class="hero__lead">
+              How we protect data, how we operate infrastructure, and what we do when something goes
+              wrong.
+            </p>
+
+            <div class="hero__meta">
+              @if (publicClaims().length > 0) {
+                <span class="pill">
+                  <app-icon name="shield" [size]="14" />
+                  {{ publicClaims().length }} public controls
+                </span>
+              } @else if (resources().length > 0) {
+                <span class="pill">
+                  <app-icon name="file" [size]="14" />
+                  {{ resources().length }} public resources
+                </span>
+              }
+              @if (compliance().length > 0) {
+                <span class="pill">
+                  <app-icon name="book" [size]="14" />
+                  {{ compliance().length }} compliance frameworks
+                </span>
+              }
+              @if (lastUpdated(); as updated) {
+                <span class="pill pill--muted">
+                  <app-icon name="clock" [size]="14" />
+                  Updated {{ relativeTime(updated) }}
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="hero__art" aria-hidden="true">
+          <span class="glow glow--a"></span>
+          <span class="glow glow--b"></span>
+          <span class="cube cube--a"></span>
+          <span class="cube cube--b"></span>
+          <span class="cube cube--c"></span>
+          <span class="grid-lines"></span>
+        </div>
+      }
+    </section>
+
+    <nav class="tabs" aria-label="Trust center sections">
+      <div class="tabs__inner">
+        <div class="tabs__links">
+          @for (item of tabs; track item.key) {
+            <a
+              class="tab"
+              [class.is-active]="activeTab() === item.key"
+              [routerLink]="tabLink(item.key)"
+              [attr.aria-current]="activeTab() === item.key ? 'page' : null"
+            >
+              {{ item.label }}
+            </a>
+          }
+        </div>
+
+        <div class="tabs__actions">
+          <button
+            type="button"
+            class="ghost"
+            aria-label="Subscribe to updates"
+            (click)="openSubscribe()"
+          >
+            <app-icon name="bell" [size]="14" />
+            <span class="action__label">Subscribe</span>
+          </button>
+          <button type="button" class="access" aria-label="Request access" (click)="openAccess()">
+            <app-icon name="lock" [size]="14" />
+            <span class="action__label">Request access</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="page">
+      @switch (activeTab()) {
+        @case ('overview') {
+          <app-trust-overview
+            [slug]="t.slug"
+            [groups]="groups()"
+            [compliance]="compliance()"
+            [resources]="resources()"
+            [subprocessors]="subprocessors()"
+            [updates]="updates()"
+            [lastUpdated]="lastUpdated()"
+            [allowNda]="t.trustCenter.allowNda"
+            (requestAccess)="openAccess($event)"
+          />
+        }
+        @case ('resources') {
+          <app-trust-resources
+            [slug]="t.slug"
+            [organizationName]="t.name"
+            [resources]="resources()"
+            [allowNda]="t.trustCenter.allowNda"
+            (requestAccess)="openAccess($event)"
+          />
+        }
+        @case ('controls') {
+          <app-trust-controls [groups]="groups()" [lastUpdated]="lastUpdated()" />
+        }
+        @case ('subprocessors') {
+          <app-trust-subprocessors [subprocessors]="subprocessors()" />
+        }
+        @case ('updates') {
+          <app-trust-updates [updates]="updates()" />
+        }
+      }
+    </main>
+
+    <footer class="foot">
+      <div class="foot__inner">
+        <p class="foot__published">Published by {{ t.name }}.</p>
+        <p class="foot__legal">
+          Statements describe internal controls declared by the organization. This page is not a
+          certification issued by an accredited body.
+        </p>
+        <p class="foot__powered">
+          Built with Comply
+          <span class="foot__dot" aria-hidden="true"></span>
+          {{ t.trustCenter.domain }}
+        </p>
+      </div>
+    </footer>
+
+    @if (dialog(); as mode) {
+      <app-trust-access-dialog
+        [mode]="mode"
+        [organizationName]="t.name"
+        [contactEmail]="t.contact.email"
+        [subject]="dialogSubject()"
+        (close)="closeDialog()"
+      />
+    }
+
+    @if (showTop()) {
+      <button type="button" class="to-top" aria-label="Back to top" (click)="scrollTop()">
+        <app-icon name="arrow-up" [size]="17" />
+      </button>
+    }
+  </div>
+} @else {
+  <div class="missing">
+    <div class="missing__brand">
+      <span class="missing__mark">C</span>
+      <span class="missing__name">Comply</span>
+    </div>
+    <span class="missing__icon"><app-icon name="shield" [size]="26" /></span>
+    <h1>Page not available</h1>
+    <p>This organization has not published a trust center at this address yet.</p>
+  </div>
+}

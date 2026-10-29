@@ -1,0 +1,16 @@
+Articolul 20
+Guvernanță
+
+1. Organele de conducere ale entităților esențiale și importante aprobă măsurile de gestionare a riscurilor de securitate cibernetică și supraveghează punerea lor în aplicare.
+
+Articolul 21
+Măsuri de gestionare a riscurilor de securitate cibernetică
+
+1. Statele membre se asigură că entitățile esențiale și importante iau măsuri tehnice și organizatorice adecvate pentru a gestiona riscurile.
+
+2. Măsurile prevăzute la alineatul (1) includ cel puțin următoarele:
+(a) politici de analiză a riscurilor și de securitate a sistemelor informatice;
+(b) gestionarea incidentelor de securitate;
+(c) continuitatea activității și gestionarea crizelor;
+(d) securitatea lanțului de aprovizionare;
+(e) gestionarea vulnerabilităților și dezvăluirea responsabilă.

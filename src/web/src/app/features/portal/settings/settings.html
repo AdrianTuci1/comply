@@ -1,0 +1,329 @@
+<app-page-header
+  eyebrow="Portal"
+  title="Settings"
+  subtitle="Organization details and default rules for assessments"
+>
+  <span class="save-state" [class.save-state--on]="saved()">
+    @if (saved()) {
+      <app-icon name="check" [size]="15" />
+      Saved
+    }
+  </span>
+  <button type="button" class="btn btn--primary" [disabled]="!dirty()" (click)="save()">
+    Save changes
+  </button>
+</app-page-header>
+
+<div class="settings-grid">
+  <section class="card">
+    <div class="card__head">
+      <h2 class="card__title">Organization profile</h2>
+    </div>
+    <div class="card__body">
+      <div class="form-grid">
+        <label class="field">
+          <span class="field__label">Organization name</span>
+          <input
+            class="input"
+            type="text"
+            [value]="form().name"
+            (input)="patch('name', $any($event.target).value)"
+          />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Registration number</span>
+          <input
+            class="input"
+            type="text"
+            [value]="form().cui"
+            (input)="patch('cui', $any($event.target).value)"
+          />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Contact person</span>
+          <input
+            class="input"
+            type="text"
+            [value]="form().contactName"
+            (input)="patch('contactName', $any($event.target).value)"
+          />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Contact email</span>
+          <input
+            class="input"
+            type="email"
+            [value]="form().contactEmail"
+            (input)="patch('contactEmail', $any($event.target).value)"
+          />
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <div class="settings-side">
+    <section class="card">
+      <div class="card__head">
+        <h2 class="card__title">Plan</h2>
+        <app-status-badge kind="plan" [status]="organization().plan" />
+      </div>
+      <div class="card__body plan-body">
+        <p class="plan-body__name">{{ planLabels[organization().plan] }} plan</p>
+        <p class="plan-body__hint">
+          Includes content for one framework, unlimited evidence, and package export.
+        </p>
+        <a class="btn btn--sm" href="https://docs.example.com" target="_blank" rel="noreferrer">
+          Compare plans
+          <app-icon name="external" [size]="14" />
+        </a>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head">
+        <h2 class="card__title">Default rules</h2>
+      </div>
+      <div class="card__body defaults">
+        <label class="field">
+          <span class="field__label">Evidence retention</span>
+          <select
+            class="select"
+            [value]="form().retentionDays"
+            (change)="patch('retentionDays', +$any($event.target).value)"
+          >
+            <option [value]="365">12 months</option>
+            <option [value]="730">24 months</option>
+            <option [value]="1825">5 years</option>
+            <option [value]="3650">10 years</option>
+          </select>
+          <span class="field__hint">Applies to new evidence, not existing evidence.</span>
+        </label>
+
+        <div class="setting-row">
+          <div>
+            <p class="setting-row__title">Sealed mode</p>
+            <p class="setting-row__hint">
+              Conclusions are encrypted on the client. Search runs locally.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="switch"
+            role="switch"
+            [attr.aria-checked]="form().sealedMode"
+            [class.is-on]="form().sealedMode"
+            (click)="patch('sealedMode', !form().sealedMode)"
+          >
+            <span></span>
+          </button>
+        </div>
+
+        <div class="key-box">
+          <app-icon name="key" [size]="16" />
+          <div>
+            <p class="key-box__title">Per-tenant encryption key</p>
+            <p class="key-box__hint">Rotated annually and managed in Key Vault.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<section class="card mcp">
+  <div class="card__head">
+    <div class="mcp__head">
+      <h2 class="card__title">MCP access and API keys</h2>
+      <span class="mcp__count">
+        {{ activeKeyCount() }} active {{ activeKeyCount() === 1 ? 'key' : 'keys' }}
+      </span>
+    </div>
+  </div>
+
+  @if (mcp(); as access) {
+    <div class="card__body mcp__body">
+      <div class="mcp__mode">
+        <div>
+          <p class="mcp__title">Deployment mode</p>
+          <p class="mcp__hint">
+            @if (access.deploymentMode === 'self_hosted') {
+              Your container serves the API and the public page. Keys are valid only in your
+              installation.
+            } @else {
+              The API runs in Comply infrastructure. The key identifies the organization on every
+              call.
+            }
+          </p>
+        </div>
+        <select
+          class="select mcp__select"
+          aria-label="Deployment mode"
+          [value]="access.deploymentMode"
+          (change)="setDeploymentMode($any($event.target).value)"
+        >
+          <option value="managed">{{ deploymentLabels.managed }}</option>
+          <option value="self_hosted">{{ deploymentLabels.self_hosted }}</option>
+        </select>
+      </div>
+
+      <div class="mcp__endpoint">
+        <div class="mcp__endpoint-label">
+          <span>MCP endpoint</span>
+          <code>{{ endpoint() }}</code>
+        </div>
+        <button type="button" class="btn btn--sm" (click)="copy(endpoint(), 'endpoint')">
+          <app-icon [name]="copied() === 'endpoint' ? 'check' : 'copy'" [size]="14" />
+          {{ copied() === 'endpoint' ? 'Copied' : 'Copy' }}
+        </button>
+      </div>
+
+      <div class="mcp__domain">
+        <div>
+          <p class="mcp__title">Public domain</p>
+          <p class="mcp__hint">
+            {{ organization().trustCenter.domain }} · {{ domainLabels[domainStatus()] }}
+          </p>
+        </div>
+        <app-status-badge kind="domain" [status]="domainStatus()" />
+        <a class="card__link" routerLink="/portal/website">
+          Configure domain
+          <app-icon name="arrow-right" [size]="13" />
+        </a>
+      </div>
+
+      @if (newSecret()) {
+        <div class="secret">
+          <div class="secret__head">
+            <app-icon name="key" [size]="16" />
+            <strong>The key "{{ newKeyName() }}" was generated.</strong>
+          </div>
+          <p>Copy it now. For security reasons, the full key cannot be shown again.</p>
+          <div class="secret__row">
+            <code>{{ newSecret() }}</code>
+            <button type="button" class="btn btn--sm" (click)="copy(newSecret(), 'secret')">
+              <app-icon [name]="copied() === 'secret' ? 'check' : 'copy'" [size]="14" />
+              {{ copied() === 'secret' ? 'Copied' : 'Copy' }}
+            </button>
+          </div>
+          <button type="button" class="btn btn--sm" (click)="dismissSecret()">
+            I saved the key
+          </button>
+        </div>
+      }
+
+      <div class="mcp__keys">
+        <div class="mcp__keys-head">
+          <p class="mcp__title">API keys</p>
+          @if (!keyOpen()) {
+            <button type="button" class="btn btn--sm btn--primary" (click)="openKeyForm()">
+              <app-icon name="plus" [size]="14" />
+              New key
+            </button>
+          }
+        </div>
+
+        @if (keyOpen()) {
+          <div class="key-form">
+            <label class="field">
+              <span class="field__label">Name</span>
+              <input
+                class="input"
+                type="text"
+                placeholder="e.g. Production harness"
+                [value]="keyName()"
+                (input)="keyName.set($any($event.target).value); keyError.set('')"
+              />
+            </label>
+
+            <div class="scopes" role="group" aria-label="Permissions">
+              @for (scope of scopes; track scope.key) {
+                <label class="scope">
+                  <input
+                    type="checkbox"
+                    [checked]="keyScopes().includes(scope.key)"
+                    (change)="toggleScope(scope.key, $any($event.target).checked)"
+                  />
+                  <span>{{ scope.label }}</span>
+                </label>
+              }
+            </div>
+
+            @if (keyError()) {
+              <p class="form-error" role="alert">{{ keyError() }}</p>
+            }
+
+            <div class="key-form__actions">
+              <button type="button" class="btn btn--sm" (click)="keyOpen.set(false)">
+                Cancel
+              </button>
+              <button type="button" class="btn btn--sm btn--primary" (click)="createKey()">
+                Generate key
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (keysLoading() && keys().length === 0) {
+          <p class="mcp__empty">Loading API keys…</p>
+        } @else if (keys().length === 0) {
+          <p class="mcp__empty">
+            No keys generated. The agent cannot connect until you create one.
+          </p>
+        } @else {
+          <ul class="keys">
+            @for (key of keys(); track key.id) {
+              <li class="key" [class.key--revoked]="!isActive(key)">
+                <div class="key__main">
+                  <div class="key__title">
+                    <strong>{{ key.name }}</strong>
+                    <code>{{ masked(key) }}</code>
+                  </div>
+                  <p class="key__meta">
+                    {{ scopeList(key.scopes) }} · created {{ formatDate(key.createdAt) }}
+                    @if (key.lastUsedAt) {
+                      · last used {{ formatDate(key.lastUsedAt) }}
+                    }
+                  </p>
+                </div>
+                <app-status-badge kind="key" [status]="keyStatus(key)" />
+                @if (isActive(key)) {
+                  <button type="button" class="btn btn--sm btn--danger" (click)="revokeKey(key.id)">
+                    Revoke
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      @if (mcpError()) {
+        <p class="form-error" role="alert">{{ mcpError() }}</p>
+      }
+
+      <p class="mcp__note">
+        <app-icon name="key" [size]="15" />
+        Send the key as <code>Authorization: Bearer …</code>. Keep it in a secret manager, not in the
+        repository.
+      </p>
+    </div>
+  }
+</section>
+
+<section class="card danger">
+  <div class="card__head">
+    <h2 class="card__title">Danger zone</h2>
+  </div>
+  <div class="card__body danger__body">
+    <div>
+      <p class="danger__title">Close the organization</p>
+      <p class="danger__hint">
+        All boards become read-only, and access is revoked after 30 days.
+      </p>
+    </div>
+    <button type="button" class="btn btn--danger" disabled>Close organization</button>
+  </div>
+</section>

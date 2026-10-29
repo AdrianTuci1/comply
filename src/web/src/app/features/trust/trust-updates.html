@@ -1,0 +1,36 @@
+<div class="toolbar">
+  <div class="toolbar__title">
+    <h1>Updates</h1>
+    <span class="count">{{ updates().length }} entries</span>
+  </div>
+</div>
+
+<p class="lead">Security, privacy and subprocessor changes from this organization.</p>
+
+@if (updates().length === 0) {
+  <p class="empty">This organization has not published any updates yet.</p>
+} @else {
+  <div class="list">
+    @for (update of visible(); track update.id) {
+      <article class="update">
+        <div class="update__head">
+          <h2>{{ update.title }}</h2>
+          <span [class]="'tag tag--' + update.tag">{{ tagLabel(update.tag) }}</span>
+        </div>
+        <p class="update__date">Published {{ formatDate(update.publishedAt) }}</p>
+        <p class="update__body" [class.is-open]="expandedId() === update.id">{{ update.body }}</p>
+        <button type="button" class="toggle" (click)="toggle(update.id)">
+          {{ expandedId() === update.id ? 'Show less' : 'Read more' }}
+        </button>
+      </article>
+    }
+  </div>
+
+  <app-pagination
+    [page]="currentPage()"
+    [pageSize]="pageSize"
+    [total]="updates().length"
+    label="updates"
+    (pageChange)="page.set($event)"
+  />
+}

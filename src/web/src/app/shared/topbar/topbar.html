@@ -1,0 +1,132 @@
+<header class="topbar">
+  <button
+    type="button"
+    class="menu-trigger"
+    aria-controls="app-sidebar"
+    [attr.aria-expanded]="mobileNavOpen()"
+    [attr.aria-label]="mobileNavOpen() ? 'Close menu' : 'Open menu'"
+    (click)="toggleNav()"
+  >
+    <app-icon [name]="mobileNavOpen() ? 'x' : 'menu'" [size]="20" />
+  </button>
+
+  <a class="brand" routerLink="/portal/dashboard" aria-label="Comply, home">
+    <span class="brand__mark"><app-icon name="shield" [size]="17" /></span>
+    <span class="brand__name">Comply</span>
+  </a>
+
+  <div class="org" appClickOutside (appClickOutside)="orgOpen.set(false)">
+    <button
+      type="button"
+      class="org__trigger"
+      (click)="toggleOrg()"
+      [attr.aria-expanded]="orgOpen()"
+      aria-haspopup="listbox"
+    >
+      <span class="org__avatar" [style.background]="organizations.active().accent">
+        {{ organizations.active().initials }}
+      </span>
+      <span class="org__meta">
+        <span class="org__name">{{ organizations.active().name }}</span>
+        <span class="org__plan">{{ planLabels[organizations.active().plan] }}</span>
+      </span>
+      <app-icon name="chevron-down" [size]="15" />
+    </button>
+
+    @if (orgOpen()) {
+      <div class="menu org__menu" role="listbox" aria-label="Organizations">
+        <p class="menu__label">Your organizations</p>
+        @for (organization of organizations.organizations(); track organization.id) {
+          <button
+            type="button"
+            class="menu__item"
+            role="option"
+            [attr.aria-selected]="organization.id === organizations.activeId()"
+            (click)="selectOrganization(organization.id)"
+          >
+            <span class="org__avatar org__avatar--sm" [style.background]="organization.accent">
+              {{ organization.initials }}
+            </span>
+            <span class="menu__text">
+              <strong>{{ organization.name }}</strong>
+              <small>{{ organization.cui }}</small>
+            </span>
+            @if (organization.id === organizations.activeId()) {
+              <span class="menu__check"><app-icon name="check" [size]="15" /></span>
+            }
+          </button>
+        }
+        <div class="menu__sep"></div>
+        <a class="menu__item" routerLink="/portal/settings" (click)="orgOpen.set(false)">
+          <app-icon name="settings" [size]="16" />
+          Organization settings
+        </a>
+      </div>
+    }
+  </div>
+
+  <span class="topbar__spacer"></span>
+
+  <a class="topbar__link" href="https://docs.example.com" target="_blank" rel="noreferrer">
+    <app-icon name="book" [size]="16" />
+    <span>Documentation</span>
+  </a>
+
+  <div class="user" appClickOutside (appClickOutside)="userOpen.set(false)">
+    <button
+      type="button"
+      class="user__trigger"
+      (click)="toggleUser()"
+      [attr.aria-expanded]="userOpen()"
+      aria-haspopup="menu"
+    >
+      <app-avatar [name]="currentUser().name" [size]="30" />
+      <app-icon name="chevron-down" [size]="15" />
+    </button>
+
+    @if (userOpen()) {
+      <div class="menu user__menu" role="menu">
+        <div class="user__head">
+          <app-avatar [name]="currentUser().name" [size]="36" />
+          <span class="user__identity">
+            <strong>{{ currentUser().name }}</strong>
+            <small>{{ currentUser().email }}</small>
+            @if (currentUser().role === 'admin') {
+              <span class="user__role">Administrator</span>
+            }
+          </span>
+        </div>
+        <div class="menu__sep"></div>
+        <a
+          class="menu__item"
+          role="menuitem"
+          routerLink="/portal/settings"
+          (click)="userOpen.set(false)"
+        >
+          <app-icon name="settings" [size]="16" />
+          Settings
+        </a>
+        <a
+          class="menu__item"
+          role="menuitem"
+          href="https://docs.example.com"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <app-icon name="book" [size]="16" />
+          Documentation
+        </a>
+        <div class="menu__sep"></div>
+        <button
+          type="button"
+          class="menu__item menu__item--danger"
+          role="menuitem"
+          (click)="signOut()"
+        >
+          <app-icon name="logout" [size]="16" />
+          Sign out
+        </button>
+      </div>
+    }
+  </div>
+</header>

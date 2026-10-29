@@ -1,0 +1,52 @@
+<div class="toolbar">
+  <div class="toolbar__title">
+    <h1>Subprocessors</h1>
+    <span class="count">{{ subprocessors().length }} vendors</span>
+  </div>
+
+  <label class="search">
+    <span class="visually-hidden">Search subprocessors</span>
+    <app-icon name="search" [size]="16" />
+    <input
+      class="search__input"
+      type="search"
+      placeholder="Search"
+      [value]="query()"
+      (input)="search($any($event.target).value)"
+    />
+  </label>
+</div>
+
+<p class="lead">
+  Vendors that process data for the service, with their purpose and the region they operate in.
+</p>
+
+@if (subprocessors().length === 0) {
+  <p class="empty">This organization has not published a subprocessor list yet.</p>
+} @else if (visible().length === 0) {
+  <div class="empty">
+    <app-icon name="search" [size]="20" />
+    <p>No vendor matches this search.</p>
+  </div>
+} @else {
+  <div class="list">
+    @for (item of visible(); track item.id) {
+      <article class="row">
+        <span class="logo" [style.background]="item.accent">{{ item.initials }}</span>
+        <div class="row__copy">
+          <h2>{{ item.name }}</h2>
+          <p>{{ item.purpose }}</p>
+        </div>
+        <span class="region">{{ item.region }}</span>
+      </article>
+    }
+  </div>
+
+  <app-pagination
+    [page]="currentPage()"
+    [pageSize]="pageSize"
+    [total]="filtered().length"
+    label="subprocessors"
+    (pageChange)="page.set($event)"
+  />
+}

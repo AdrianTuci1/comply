@@ -1,0 +1,121 @@
+<app-page-header
+  eyebrow="Portal"
+  title="Users"
+  [subtitle]="activeCount() + ' active users out of ' + members().length + ' members'"
+>
+  <button type="button" class="btn btn--primary" (click)="openInvite()">
+    <app-icon name="plus" [size]="16" />
+    Invite user
+  </button>
+</app-page-header>
+
+<div class="toolbar users__toolbar">
+  <label class="search">
+    <span class="visually-hidden">Search users</span>
+    <app-icon name="search" [size]="16" />
+    <input
+      class="input"
+      type="search"
+      placeholder="Search by name or email"
+      [value]="query()"
+      (input)="query.set($any($event.target).value)"
+    />
+  </label>
+
+  <label class="role-filter">
+    <span class="visually-hidden">Filter by role</span>
+    <select
+      class="select"
+      [value]="roleFilter()"
+      (change)="roleFilter.set($any($event.target).value)"
+    >
+      <option value="all">All roles</option>
+      @for (role of roleOptions; track role.value) {
+        <option [value]="role.value">{{ role.label }}</option>
+      }
+    </select>
+  </label>
+</div>
+
+<section class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Last activity</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (member of filtered(); track member.id) {
+          <tr>
+            <td>
+              <div class="user-cell">
+                <app-avatar [name]="member.name" [size]="32" />
+                <div>
+                  <p class="user-name">{{ member.name }}</p>
+                  <p class="user-email">{{ member.email }}</p>
+                </div>
+              </div>
+            </td>
+            <td><app-status-badge kind="role" [status]="member.role" /></td>
+            <td><app-status-badge kind="member" [status]="member.status" /></td>
+            <td class="muted">
+              {{ member.lastSeen ? relativeTime(member.lastSeen) : '—' }}
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4">
+              <p class="empty-row">No users match the current filters.</p>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+@if (inviteOpen()) {
+  <app-modal title="Invite user" (close)="inviteOpen.set(false)">
+    <form class="invite" novalidate (submit)="$event.preventDefault(); submitInvite()">
+      <label class="field">
+        <span class="field__label">Email address</span>
+        <input
+          class="input"
+          type="email"
+          placeholder="name@company.com"
+          [value]="inviteEmail()"
+          (input)="inviteEmail.set($any($event.target).value); inviteError.set('')"
+          autofocus
+        />
+        @if (inviteError()) {
+          <span class="field__error">{{ inviteError() }}</span>
+        }
+      </label>
+
+      <label class="field">
+        <span class="field__label">Role</span>
+        <select
+          class="select"
+          [value]="inviteRole()"
+          (change)="inviteRole.set($any($event.target).value)"
+        >
+          @for (role of roleOptions; track role.value) {
+            <option [value]="role.value">{{ role.label }}</option>
+          }
+        </select>
+        <span class="field__hint">
+          Contributors upload evidence, reviewers approve, and auditors have read-only access.
+        </span>
+      </label>
+
+      <div class="invite__actions">
+        <button type="button" class="btn" (click)="inviteOpen.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary">Send invitation</button>
+      </div>
+    </form>
+  </app-modal>
+}

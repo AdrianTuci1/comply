@@ -1,0 +1,12 @@
+4 Contextul organizației
+4.1 Înțelegerea organizației și a contextului său
+
+Organizația trebuie să determine aspectele externe și interne relevante pentru scopul său.
+
+A.5.1 Politici de securitate a informației
+
+Politica de securitate a informației trebuie definită, aprobată de conducere, publicată și comunicată personalului relevant.
+
+A.8.24 Utilizarea criptografiei
+
+Organizația trebuie să stabilească și să implementeze reguli pentru utilizarea eficace a criptografiei, inclusiv gestionarea cheilor.

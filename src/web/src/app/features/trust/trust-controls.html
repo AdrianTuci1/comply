@@ -1,0 +1,89 @@
+<div class="toolbar">
+  <div class="toolbar__title">
+    <h1>Controls</h1>
+    @if (lastUpdated(); as updated) {
+      <span class="updated">
+        <app-icon name="check" [size]="12" />
+        Updated {{ relativeTime(updated) }}
+      </span>
+    }
+  </div>
+
+  <label class="search">
+    <span class="visually-hidden">Search controls</span>
+    <app-icon name="search" [size]="16" />
+    <input
+      class="search__input"
+      type="search"
+      placeholder="Search controls"
+      [value]="query()"
+      (input)="search($any($event.target).value)"
+    />
+  </label>
+</div>
+
+@if (groups().length === 0) {
+  <p class="empty">This organization has not published control statements yet.</p>
+} @else {
+  <div class="layout">
+    <nav class="categories" aria-label="Control categories">
+      @for (group of filteredGroups(); track group.category) {
+        <a
+          class="category"
+          [href]="'#' + group.category"
+          (click)="$event.preventDefault(); scrollTo(group.category)"
+        >
+          <span>{{ group.label }}</span>
+          <span class="category__count">{{ group.claims.length }}</span>
+        </a>
+      }
+    </nav>
+
+    <section class="content">
+      @if (total() === 0) {
+        <div class="empty">
+          <app-icon name="search" [size]="20" />
+          <p>No control matches this search.</p>
+        </div>
+      } @else {
+        <div class="groups">
+          @for (group of filteredGroups(); track group.category) {
+            <section class="group" [id]="group.category">
+              <header class="group__head">
+                <h2>{{ group.label }}</h2>
+                <span class="group__count">{{ group.claims.length }}</span>
+              </header>
+
+              <div class="table-wrap">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Control</th>
+                      <th scope="col" class="status-col">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (claim of group.claims; track claim.id) {
+                      <tr>
+                        <td>
+                          <h3>{{ claim.title }}</h3>
+                          <p>{{ claim.body }}</p>
+                        </td>
+                        <td class="status-col">
+                          <span class="tick" title="Control approved">
+                            <app-icon name="check" [size]="11" />
+                            <span class="visually-hidden">Approved</span>
+                          </span>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          }
+        </div>
+      }
+    </section>
+  </div>
+}

@@ -1,0 +1,51 @@
+name: comply-local
+
+services:
+  comply:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: comply/comply:local
+    environment:
+      NODE_ENV: production
+      COMPLY_APP_URL: "${APP_URL:-http://localhost:8080}"
+      COMPLY_PUBLIC_URL: "${PUBLIC_URL:-}"
+      COMPLY_AUTH_SECRET: "${AUTH_SECRET:-local-dev-secret-change-me}"
+      COMPLY_DEMO_LOGIN: "${COMPLY_DEMO_LOGIN:-1}"
+      COMPLY_SEED_EMAIL: "${COMPLY_SEED_EMAIL:-adrian@comply.ro}"
+      COMPLY_SEED_PASSWORD: "${COMPLY_SEED_PASSWORD:-comply-demo}"
+      COMPLY_SEED_NAME: "${COMPLY_SEED_NAME:-Adrian}"
+      COMPLY_SEED_ORGANIZATION: "${COMPLY_SEED_ORGANIZATION:-Nordwind Logistics}"
+      COMPLY_TRUST_HOST: "${TRUST_HOST:-}"
+      COMPLY_TRUST_SLUG: "${TRUST_SLUG:-nordwind}"
+      COMPLY_INGEST_INTERVAL_HOURS: "${COMPLY_INGEST_INTERVAL_HOURS:-168}"
+      COMPLY_INGEST_STARTUP_DELAY_SECONDS: "${COMPLY_INGEST_STARTUP_DELAY_SECONDS:-90}"
+      COMPLY_INGEST_ON_START: "${COMPLY_INGEST_ON_START:-1}"
+      COMPLY_OIDC_GOOGLE_CLIENT_ID: "${COMPLY_OIDC_GOOGLE_CLIENT_ID:-}"
+      COMPLY_OIDC_GOOGLE_CLIENT_SECRET: "${COMPLY_OIDC_GOOGLE_CLIENT_SECRET:-}"
+      COMPLY_OIDC_MICROSOFT_CLIENT_ID: "${COMPLY_OIDC_MICROSOFT_CLIENT_ID:-}"
+      COMPLY_OIDC_MICROSOFT_CLIENT_SECRET: "${COMPLY_OIDC_MICROSOFT_CLIENT_SECRET:-}"
+      COMPLY_OIDC_MICROSOFT_TENANT: "${COMPLY_OIDC_MICROSOFT_TENANT:-common}"
+      COMPLY_OIDC_GITHUB_CLIENT_ID: "${COMPLY_OIDC_GITHUB_CLIENT_ID:-}"
+      COMPLY_OIDC_GITHUB_CLIENT_SECRET: "${COMPLY_OIDC_GITHUB_CLIENT_SECRET:-}"
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  # One-shot tools. Run explicitly:
+  #   docker compose run --rm content validate --all
+  #   docker compose run --rm content build --all
+  content:
+    build:
+      context: .
+      dockerfile: tools/content-ingest/Dockerfile
+    image: comply/content-ingest:local
+    profiles: ["tools"]
+    working_dir: /app
+    volumes:
+      - ./content:/app/content
+      - ./contracts:/app/contracts:ro
+      - ./dist/content:/app/dist/content
+    command: ["validate", "--all"]

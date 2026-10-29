@@ -1,0 +1,14 @@
+Articolul 9
+Sistem de management al riscului
+
+1. Se instituie, se pune în aplicare, se documentează și se menține un sistem de management al riscului.
+
+2. Sistemul de management al riscului cuprinde:
+(a) identificarea și analiza riscurilor cunoscute și previzibile;
+(b) estimarea și evaluarea riscurilor care pot apărea;
+(c) evaluarea altor riscuri care pot apărea.
+
+Articolul 10
+Date și guvernanța datelor
+
+Seturile de date de instruire, validare și testare trebuie să fie relevante, suficient de reprezentative și de înaltă calitate.

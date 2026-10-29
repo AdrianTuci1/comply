@@ -1,0 +1,166 @@
+<div class="overview">
+  <aside class="side">
+    <section class="block">
+      <div class="section-head">
+        <h2>Compliance</h2>
+      </div>
+
+      @if (compliance().length === 0) {
+        <p class="muted">This organization has not published a compliance profile yet.</p>
+      } @else {
+        <div class="compliance-list">
+          @for (profile of compliance(); track profile.id) {
+            <article class="compliance-card">
+              <span class="compliance-mark">{{ monogram(profile.frameworkId) }}</span>
+              <div class="compliance-copy">
+                <h3>{{ frameworkLabel(profile.frameworkId) }}</h3>
+                <p>{{ profile.note }}</p>
+                <span class="status" [class]="'status status--' + profile.status">
+                  {{ statusLabel(profile.status) }}
+                </span>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="block">
+      <div class="section-head">
+        <h2>Resources</h2>
+        <a class="link" [routerLink]="tabLink('resources')">View all</a>
+      </div>
+
+      <div class="resource-card">
+        <p class="resource-group">Documents</p>
+        @for (resource of documents(); track resource.id) {
+          <a class="resource-link" [routerLink]="tabLink('resources')" [fragment]="resource.id">
+            <span>{{ resource.title }}</span>
+            @if (resource.gated) {
+              <app-icon name="lock" [size]="14" />
+            }
+          </a>
+        } @empty {
+          <p class="muted">No documents published.</p>
+        }
+
+        <p class="resource-group resource-group--spaced">Privacy</p>
+        @for (resource of privacy(); track resource.id) {
+          <a class="resource-link" [routerLink]="tabLink('resources')" [fragment]="resource.id">
+            <span>{{ resource.title }}</span>
+            @if (resource.gated) {
+              <app-icon name="lock" [size]="14" />
+            }
+          </a>
+        } @empty {
+          <p class="muted">No policies published.</p>
+        }
+      </div>
+    </section>
+  </aside>
+
+  <div class="main">
+    <section class="block">
+      <div class="section-head">
+        <div class="head-pill">
+          <h2>Controls</h2>
+          @if (lastUpdated(); as updated) {
+            <span class="updated">
+              <app-icon name="check" [size]="12" />
+              Updated {{ relativeTime(updated) }}
+            </span>
+          }
+        </div>
+        @if (controlCards().length > 0) {
+          <a class="link" [routerLink]="tabLink('controls')">View all</a>
+        }
+      </div>
+
+      @if (controlCards().length === 0) {
+        <p class="muted">This organization has not published control statements yet.</p>
+      } @else {
+        <div class="control-grid">
+          @for (card of controlCards(); track card.category) {
+            <article class="control-card">
+              <a class="control-card__head" [routerLink]="tabLink('controls')">
+                <h3>{{ card.label }}</h3>
+                <app-icon name="chevron-right" [size]="16" />
+              </a>
+              <ul class="control-list">
+                @for (claim of card.preview; track claim.id) {
+                  <li>
+                    <span class="tick"><app-icon name="check" [size]="10" /></span>
+                    <span>{{ claim.title }}</span>
+                  </li>
+                }
+              </ul>
+              <a class="more" [routerLink]="tabLink('controls')">
+                View all {{ card.total }} {{ card.total === 1 ? 'control' : 'controls' }}
+              </a>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="block block--spaced">
+      <div class="section-head">
+        <h2>Subprocessors</h2>
+        <a class="link" [routerLink]="tabLink('subprocessors')">View all</a>
+      </div>
+
+      <div class="sub-list">
+        @for (item of topSubprocessors(); track item.id) {
+          <div class="sub-row">
+            <span class="sub-logo" [style.background]="item.accent">{{ item.initials }}</span>
+            <span class="sub-name">
+              {{ item.name }}
+              <span class="sub-purpose">· {{ item.purpose }}</span>
+            </span>
+            <span class="sub-region">{{ item.region }}</span>
+          </div>
+        } @empty {
+          <p class="muted">No subprocessors published.</p>
+        }
+      </div>
+    </section>
+
+    <section class="block block--spaced">
+      <div class="section-head">
+        <h2>Updates</h2>
+        <a class="link" [routerLink]="tabLink('updates')">View all</a>
+      </div>
+
+      <div class="update-list">
+        @for (update of topUpdates(); track update.id) {
+          <article class="update-card">
+            <div class="update-top">
+              <span class="tag">{{ tagLabel(update.tag) }}</span>
+              <span class="date">{{ formatDate(update.publishedAt) }}</span>
+            </div>
+            <h3>{{ update.title }}</h3>
+            <p>{{ update.body }}</p>
+            <a class="more" [routerLink]="tabLink('updates')">Read more</a>
+          </article>
+        } @empty {
+          <p class="muted">No updates published.</p>
+        }
+      </div>
+    </section>
+  </div>
+</div>
+
+@if (allowNda()) {
+  <section class="nda">
+    <div>
+      <h2>Full reports under NDA</h2>
+      <p>
+        The audit report, detailed evidence and test results are available on request for vendor
+        assessments.
+      </p>
+    </div>
+    <button type="button" class="nda-btn" (click)="requestAccess.emit('Audit report')">
+      Request access
+    </button>
+  </section>
+}

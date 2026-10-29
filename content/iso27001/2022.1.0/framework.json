@@ -1,0 +1,10 @@
+{
+  "id": "iso27001/2022.1.0",
+  "frameworkId": "iso27001",
+  "version": "2022.1.0",
+  "docType": "framework",
+  "title": "ISO/IEC 27001:2022",
+  "effectiveFrom": "2022-10-25",
+  "source": "ISO/IEC 27001:2022 — clauzele 4–10 și Anexa A",
+  "license": "proprietary"
+}

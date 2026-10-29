@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comply.local/contracts/content/question.schema.json",
+  "title": "Evidence question",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "frameworkId",
+    "version",
+    "docType",
+    "requirementRef",
+    "question",
+    "evidenceType",
+    "cadence"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "minLength": 3
+    },
+    "frameworkId": {
+      "type": "string",
+      "enum": ["nis2", "iso27001", "ai-act"]
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]{4}\\.[0-9]+\\.[0-9]+$"
+    },
+    "docType": { "const": "question" },
+    "requirementRef": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "question": { "type": "string", "minLength": 20, "maxLength": 400 },
+    "evidenceType": {
+      "type": "string",
+      "enum": ["api", "document", "attestation"]
+    },
+    "cadence": {
+      "type": "string",
+      "enum": ["continuous", "monthly", "quarterly", "annual", "per_event"]
+    },
+    "verifier": { "type": "string", "maxLength": 200 },
+    "threshold": { "type": "string", "maxLength": 200 },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewer", "reviewedAt", "reformulated"],
+      "properties": {
+        "reviewer": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "reviewedAt": { "type": "string", "format": "date-time" },
+        "reformulated": { "type": "boolean" }
+      }
+    }
+  }
+}

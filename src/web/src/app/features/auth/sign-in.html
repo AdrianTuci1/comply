@@ -1,0 +1,285 @@
+<div class="signin">
+  <a class="brand" routerLink="/" aria-label="Comply">
+    <span class="brand__mark"><app-icon name="shield" [size]="22" /></span>
+    <span class="brand__name">Comply</span>
+  </a>
+
+  <main class="panel">
+    <section class="form-side" aria-labelledby="signin-title">
+      @if (linkFlow() || codeFlow()) {
+        <p class="eyebrow">{{ codeFlow() ? 'Single sign-on' : 'Secure link' }}</p>
+        <h1 id="signin-title">{{ verifying() ? 'Signing you in…' : 'Sign-in not accepted' }}</h1>
+        @if (verifying()) {
+          <p class="lede">Verifying your identity and opening the workspace.</p>
+        } @else if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+          <button type="button" class="text-link" (click)="reset()">Back to sign in</button>
+        }
+      } @else if (sent(); as link) {
+        <p class="eyebrow">Email sent</p>
+        <h1 id="signin-title">Check your inbox</h1>
+        <p class="lede">
+          We sent a sign-in link to <strong>{{ link.email }}</strong
+          >. The link expires at {{ link.expiresAt | date: 'shortTime' }}.
+        </p>
+
+        @if (link.devToken) {
+          <button type="button" class="primary" [disabled]="verifying()" (click)="openDemoLink()">
+            {{ verifying() ? 'Opening…' : 'Open the sign-in link (demo)' }}
+          </button>
+          <p class="demo-note">
+            Demo mode returns the link here. In production the link arrives by email.
+          </p>
+        }
+
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+
+        <button type="button" class="text-link" (click)="reset()">Use a different email</button>
+      } @else if (setupRequired()) {
+        <p class="eyebrow">First run</p>
+        <h1 id="signin-title">Set up Comply</h1>
+        <p class="lede">
+          Create the first account for this installation. It becomes the administrator and owns the
+          workspace.
+        </p>
+
+        <div class="form-head">
+          <h2>Administrator account</h2>
+        </div>
+
+        <form
+          class="form"
+          novalidate
+          (submit)="$event.preventDefault(); submitSetup()"
+        >
+          <label class="field">
+            <span class="field__label">Full name</span>
+            <input
+              class="input"
+              type="text"
+              name="name"
+              autocomplete="name"
+              placeholder="Jane Doe"
+              [value]="setupName()"
+              (input)="setSetupName($any($event.target).value)"
+            />
+          </label>
+
+          <label class="field">
+            <span class="field__label">Work email</span>
+            <input
+              class="input"
+              type="email"
+              name="email"
+              autocomplete="email"
+              inputmode="email"
+              placeholder="you@company.com"
+              [value]="email()"
+              (input)="setEmail($any($event.target).value)"
+            />
+          </label>
+
+          <label class="field">
+            <span class="field__label">Organization</span>
+            <input
+              class="input"
+              type="text"
+              name="organization"
+              autocomplete="organization"
+              placeholder="Your company"
+              [value]="setupOrganization()"
+              (input)="setSetupOrganization($any($event.target).value)"
+            />
+          </label>
+
+          <label class="field">
+            <span class="field__label">Password</span>
+            <input
+              class="input"
+              type="password"
+              name="password"
+              autocomplete="new-password"
+              placeholder="At least 10 characters"
+              [value]="password()"
+              (input)="setPassword($any($event.target).value)"
+            />
+          </label>
+
+          @if (error()) {
+            <p class="error" role="alert">{{ error() }}</p>
+          }
+
+          <button
+            type="submit"
+            class="primary"
+            [disabled]="
+              busy() ||
+              !email().trim() ||
+              !password() ||
+              !setupName().trim() ||
+              !setupOrganization().trim()
+            "
+            [attr.aria-busy]="busy()"
+          >
+            {{ busy() ? 'Creating account…' : 'Create administrator account' }}
+          </button>
+        </form>
+
+        <p class="demo-note">
+          This page is shown once. The account is stored locally in this installation.
+        </p>
+      } @else {
+        <h1 id="signin-title">Welcome back!</h1>
+
+        <div class="form-head">
+          <h2>Sign in to Comply</h2>
+          <label class="region">
+            <span class="visually-hidden">Region</span>
+            <span class="region__flag" aria-hidden="true">{{
+              region() === 'RO' ? '🇷🇴' : region() === 'US' ? '🇺🇸' : '🇪🇺'
+            }}</span>
+            <select
+              class="region__select"
+              [value]="region()"
+              (change)="setRegion($any($event.target).value)"
+            >
+              <option value="EU">EU</option>
+              <option value="RO">RO</option>
+              <option value="US">US</option>
+            </select>
+          </label>
+        </div>
+
+        <form
+          class="form"
+          novalidate
+          (submit)="$event.preventDefault(); linkMode() ? submitLink() : submitPassword()"
+        >
+          <label class="field">
+            <span class="field__label">Enter your email address</span>
+            <input
+              class="input"
+              type="email"
+              name="email"
+              autocomplete="email"
+              inputmode="email"
+              placeholder="you@company.com"
+              [value]="email()"
+              (input)="setEmail($any($event.target).value)"
+              [attr.aria-invalid]="error() ? 'true' : null"
+            />
+          </label>
+
+          @if (!linkMode()) {
+            <label class="field">
+              <span class="field__label">Password</span>
+              <input
+                class="input"
+                type="password"
+                name="password"
+                autocomplete="current-password"
+                placeholder="Your password"
+                [value]="password()"
+                (input)="setPassword($any($event.target).value)"
+              />
+            </label>
+          }
+
+          @if (error()) {
+            <p class="error" role="alert">{{ error() }}</p>
+          }
+
+          <button
+            type="submit"
+            class="primary"
+            [disabled]="busy() || !email().trim() || (!linkMode() && !password())"
+            [attr.aria-busy]="busy()"
+          >
+            {{
+              busy()
+                ? linkMode()
+                  ? 'Sending…'
+                  : 'Signing in…'
+                : linkMode()
+                  ? 'Continue with email'
+                  : 'Sign in'
+            }}
+          </button>
+        </form>
+
+        <button
+          type="button"
+          class="text-link"
+          (click)="linkMode() ? usePasswordMode() : useLinkMode()"
+        >
+          {{ linkMode() ? 'Use a password instead' : 'Email me a sign-in link instead' }}
+        </button>
+
+        @if (!linkMode() && providers().length > 0) {
+          <div class="divider"><span>or continue with</span></div>
+
+          <div class="providers">
+            @for (provider of providers(); track provider.id) {
+              <button
+                type="button"
+                class="provider"
+                [attr.aria-label]="'Sign in with ' + provider.label"
+                (click)="startProvider(provider)"
+              >
+                <span class="provider__mark">{{ providerMark(provider) }}</span>
+                <span>{{ provider.label }}</span>
+              </button>
+            }
+          </div>
+        }
+
+        @if (!linkMode()) {
+          @if (demo(); as credentials) {
+            <p class="demo-note">
+              Demo account: <strong>{{ credentials.email }}</strong> /
+              <strong>{{ credentials.password }}</strong>
+              <button type="button" class="text-link text-link--inline" (click)="useDemo()">
+                Fill it in
+              </button>
+            </p>
+          }
+        }
+
+        <p class="alt">
+          Don't have an account?
+          <a href="mailto:hello@comply.app?subject=Comply%20account">Contact us.</a>
+        </p>
+      }
+    </section>
+
+    <aside class="promo">
+      <div class="promo__card">
+        <p class="promo__brand">Comply</p>
+        <p class="promo__meta">NIS2 · ISO 27001 · EU AI Act</p>
+
+        <h2>Audit evidence,<br />ready when they ask.</h2>
+        <p class="promo__text">
+          Turn official requirements into a reviewable checklist. Every answer keeps a citation back
+          to the source.
+        </p>
+
+        <div class="promo__rule"></div>
+
+        <ul class="promo__list" aria-label="What Comply covers">
+          <li>Requirements extracted from official texts</li>
+          <li>Managed content refreshed from official sources</li>
+          <li>Trust center and MCP access from the same evidence</li>
+        </ul>
+      </div>
+
+      <p class="promo__foot">Trust center · Evidence · Agent access</p>
+    </aside>
+  </main>
+
+  <p class="legal">
+    Comply does not issue certifications. Statements describe controls declared by each
+    organization.
+  </p>
+</div>

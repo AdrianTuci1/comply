@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comply.local/contracts/content/manifest.schema.json",
+  "title": "Content bundle manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "docType",
+    "frameworkId",
+    "version",
+    "publishedAt",
+    "hash",
+    "files"
+  ],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]+/[0-9]{4}\\.[0-9]+\\.[0-9]+$" },
+    "docType": { "const": "manifest" },
+    "frameworkId": {
+      "type": "string",
+      "enum": ["nis2", "iso27001", "ai-act"]
+    },
+    "version": { "type": "string", "pattern": "^[0-9]{4}\\.[0-9]+\\.[0-9]+$" },
+    "publishedAt": { "type": "string", "format": "date-time" },
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "bytes"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "bytes": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alg", "keyId", "value"],
+      "properties": {
+        "alg": { "type": "string" },
+        "keyId": { "type": "string" },
+        "value": { "type": "string" }
+      }
+    }
+  }
+}

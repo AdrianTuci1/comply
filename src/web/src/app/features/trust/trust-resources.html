@@ -1,0 +1,159 @@
+<div class="toolbar">
+  <h1>Resources</h1>
+
+  <div class="toolbar__actions">
+    <button type="button" class="bulk" (click)="exportList()">
+      <app-icon name="download" [size]="15" />
+      Download list
+    </button>
+
+    <label class="search">
+      <span class="visually-hidden">Search resources</span>
+      <app-icon name="search" [size]="16" />
+      <input
+        class="search__input"
+        type="search"
+        placeholder="Search"
+        [value]="query()"
+        (input)="search($any($event.target).value)"
+      />
+    </label>
+  </div>
+</div>
+
+@if (resources().length === 0) {
+  <p class="empty">This organization has not published any resources yet.</p>
+} @else {
+  <div class="layout">
+    <nav class="categories" aria-label="Resource categories">
+      @for (entry of categories(); track entry.category) {
+        <button
+          type="button"
+          class="category"
+          [class.is-active]="activeCategory() === entry.category"
+          (click)="selectCategory(entry.category)"
+        >
+          <span>{{ entry.label }}</span>
+          <span class="category__count">{{ entry.count }}</span>
+        </button>
+      }
+    </nav>
+
+    <section class="content">
+      <header class="content__head">
+        <h2>{{ activeLabel() }}</h2>
+        <span class="content__count">
+          {{ filtered().length }} {{ filtered().length === 1 ? 'resource' : 'resources' }}
+        </span>
+      </header>
+
+      @if (visible().length === 0) {
+        <div class="empty">
+          <app-icon name="search" [size]="20" />
+          <p>No resource matches this search.</p>
+        </div>
+      } @else {
+        <div class="list">
+          @for (resource of visible(); track resource.id) {
+            <article class="resource" [id]="resource.id">
+              <div class="resource__body">
+                <div class="resource__title-row">
+                  <h3>{{ resource.title }}</h3>
+                  @if (resource.gated) {
+                    <span class="access-badge">
+                      <app-icon name="lock" [size]="12" />
+                      On request
+                    </span>
+                  } @else {
+                    <span class="public-badge">Public</span>
+                  }
+                </div>
+                <p class="resource__description">{{ resource.description }}</p>
+                <p class="resource__meta">Updated {{ formatDate(resource.updatedAt) }}</p>
+              </div>
+
+              <div class="resource__actions">
+                <button type="button" class="copy" (click)="copyLink(resource)">
+                  <app-icon name="copy" [size]="14" />
+                  {{ copiedId() === resource.id ? 'Copied' : 'Copy link' }}
+                </button>
+
+                @if (resource.gated) {
+                  <button
+                    type="button"
+                    class="request"
+                    (click)="requestAccess.emit(resource.title)"
+                  >
+                    <app-icon name="lock" [size]="14" />
+                    Request access
+                  </button>
+                } @else {
+                  <button type="button" class="open" (click)="open(resource)">
+                    <app-icon name="eye" [size]="14" />
+                    Open
+                  </button>
+                }
+              </div>
+            </article>
+          }
+        </div>
+
+        <app-pagination
+          [page]="currentPage()"
+          [pageSize]="pageSize"
+          [total]="filtered().length"
+          label="resources"
+          (pageChange)="page.set($event)"
+        />
+      }
+    </section>
+  </div>
+}
+
+@if (allowNda()) {
+  <section class="nda">
+    <div>
+      <h2>Full reports under NDA</h2>
+      <p>
+        The audit report, detailed evidence and test results are available on request for vendor
+        assessments.
+      </p>
+    </div>
+    <button type="button" class="nda-btn" (click)="requestAccess.emit('Audit report')">
+      Request access
+    </button>
+  </section>
+}
+
+@if (opened(); as resource) {
+  <app-modal [title]="resource.title" closeLabel="Close" (close)="close()">
+    <article class="document">
+      <p class="document__meta">
+        {{ categoryLabel(resource.category) }} · updated {{ formatDate(resource.updatedAt) }} ·
+        public
+      </p>
+      <p class="document__lead">{{ resource.description }}</p>
+
+      <div class="document__body">
+        @for (paragraph of paragraphs(resource); track $index) {
+          <p>{{ paragraph }}</p>
+        }
+      </div>
+
+      <div class="document__actions">
+        <button type="button" class="document__btn" (click)="downloadDocument(resource)">
+          <app-icon name="download" [size]="14" />
+          Download
+        </button>
+        <button
+          type="button"
+          class="document__btn document__btn--primary"
+          (click)="openDocument(resource)"
+        >
+          <app-icon name="external" [size]="14" />
+          Open in new tab
+        </button>
+      </div>
+    </article>
+  </app-modal>
+}

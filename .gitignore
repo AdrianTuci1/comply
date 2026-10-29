@@ -1,0 +1,35 @@
+# .NET
+src/server/**/bin/
+obj/
+bin/*
+!bin/comply.mjs
+*.user
+local.settings.json
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+coverage/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+
+# Build artifacts
+*.zip
+/content/**/build/
+
+# Source documents for content ingestion (licensing)
+/content/_sources/**
+!/content/_sources/README.md
+
+# Extracted drafts stay local until a reviewer promotes them
+/content/**/drafts/
+
+# Runtime content library and captured source documents
+/data/

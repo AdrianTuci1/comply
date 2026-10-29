@@ -1,0 +1,324 @@
+@if (!board()) {
+  <app-page-header eyebrow="Workspace" title="Board unavailable" />
+  <section class="card">
+    <app-empty-state
+      icon="boards"
+      title="Board not found"
+      message="It may have been deleted or the link is wrong. Return to the list of boards."
+    >
+      <a class="btn" routerLink="/workspace/boards">Back to boards</a>
+    </app-empty-state>
+  </section>
+} @else if (board(); as b) {
+  <a class="back-link" routerLink="/workspace/boards">
+    <app-icon name="chevron-right" [size]="14" />
+    Boards
+  </a>
+
+  <app-page-header
+    [eyebrow]="b.framework.label + ' · ' + b.frameworkVersion"
+    [title]="b.name"
+    [subtitle]="
+      b.owner +
+      ' · ' +
+      year(b.periodFrom) +
+      '–' +
+      year(b.periodTo) +
+      ' · updated ' +
+      relativeTime(b.updatedAt)
+    "
+  >
+    <button type="button" class="btn" (click)="exportBoard()">
+      <app-icon name="download" [size]="16" />
+      Export JSON
+    </button>
+    @if (b.status === 'draft' || b.status === 'in_progress') {
+      <button type="button" class="btn btn--primary" (click)="sendToReview()">
+        <app-icon name="check" [size]="16" />
+        Send to review
+      </button>
+    }
+  </app-page-header>
+
+  @if (notice(); as n) {
+    <div class="saved" [class.saved--error]="n.tone === 'error'" role="status">
+      <app-icon [name]="n.tone === 'error' ? 'alert' : 'check'" [size]="15" />
+      {{ n.message }}
+    </div>
+  }
+
+  <section class="summary" aria-label="Board summary">
+    <div class="summary__status">
+      <app-status-badge kind="board" [status]="b.status" />
+      <span class="summary__coverage">{{ b.coverage }}% coverage</span>
+    </div>
+    <app-progress-bar [value]="b.coverage" />
+    <dl class="summary__stats">
+      <div>
+        <dt>Accepted</dt>
+        <dd>{{ b.accepted }}/{{ b.total }}</dd>
+      </div>
+      <div>
+        <dt>Proposals</dt>
+        <dd>{{ b.proposed }}</dd>
+      </div>
+      <div>
+        <dt>Gaps</dt>
+        <dd [class.summary__danger]="b.gaps > 0">{{ b.gaps }}</dd>
+      </div>
+      <div>
+        <dt>Requirements listed</dt>
+        <dd>{{ items().length }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <div class="detail-grid">
+    <section class="card list-card">
+      <div class="list-card__head">
+        <div class="chips" role="group" aria-label="Filter by status">
+          @for (filter of filters; track filter.value) {
+            <button
+              type="button"
+              class="chip"
+              [class.is-active]="statusFilter() === filter.value"
+              (click)="statusFilter.set(filter.value)"
+            >
+              {{ filter.label }}
+              <span class="chip__count">{{ countFor(filter.value) }}</span>
+            </button>
+          }
+        </div>
+
+        <label class="search">
+          <span class="visually-hidden">Search requirements</span>
+          <app-icon name="search" [size]="16" />
+          <input
+            class="input"
+            type="search"
+            placeholder="Search by reference, title, or description"
+            [value]="query()"
+            (input)="query.set($any($event.target).value)"
+          />
+        </label>
+      </div>
+
+      @if (visibleItems().length === 0) {
+        <app-empty-state
+          icon="search"
+          title="No requirements match the current filters"
+          message="Change the status or search for another reference."
+        />
+      } @else {
+        <ul class="item-list">
+          @for (item of visibleItems(); track item.id) {
+            <li>
+              <button
+                type="button"
+                class="item-row"
+                [class.is-active]="isActive(item.id)"
+                (click)="selectedId.set(item.id)"
+              >
+                <span class="item-row__main">
+                  <span class="item-row__top">
+                    <span class="mono item-row__ref">{{ item.ref }}</span>
+                    @if (item.staleReason) {
+                      <span class="stale-dot" title="Needs reconfirmation">!</span>
+                    }
+                  </span>
+                  <span class="item-row__title">{{ item.title }}</span>
+                  @if (item.description) {
+                    <span class="item-row__desc">{{ item.description }}</span>
+                  }
+                  <span class="item-row__meta">
+                    {{ item.owner }} · {{ item.evidenceCount }} evidence · updated
+                    {{ relativeTime(item.updatedAt) }}
+                  </span>
+                </span>
+                <app-status-badge kind="item" [status]="item.status" />
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    @if (activeItem(); as item) {
+      <aside class="card panel">
+        <header class="panel__head">
+          <div class="panel__title">
+            <span class="mono panel__ref">{{ item.ref }}</span>
+            <h2>{{ item.title }}</h2>
+          </div>
+          <app-status-badge kind="item" [status]="item.status" />
+        </header>
+
+        <div class="panel__body">
+          @if (item.description) {
+            <p class="panel__description">{{ item.description }}</p>
+          }
+
+          @if (item.staleReason) {
+            <div class="stale">
+              <app-icon name="alert" [size]="16" />
+              <p>{{ staleMessage(item.staleReason) }}</p>
+            </div>
+          }
+
+          <dl class="panel__meta">
+            <div>
+              <dt>Owner</dt>
+              <dd>{{ item.owner }}</dd>
+            </div>
+            <div>
+              <dt>Updated</dt>
+              <dd>{{ formatDate(item.updatedAt) }}</dd>
+            </div>
+            <div>
+              <dt>Valid until</dt>
+              <dd>{{ item.validUntil ? formatDate(item.validUntil) : '—' }}</dd>
+            </div>
+          </dl>
+
+          <section class="panel__section">
+            <div class="panel__section-head">
+              <h3>Artifacts</h3>
+              <span class="soft">{{ item.evidenceCount }} attached</span>
+            </div>
+
+            @if (item.evidenceCount === 0) {
+              <p class="panel__hint">
+                No evidence yet. Evidence is uploaded manually or through MCP, with recorded
+                provenance.
+              </p>
+            } @else if (evidence().length === 0) {
+              <ul class="evidence">
+                @for (slot of evidenceSlots(); track slot) {
+                  <li class="evidence__placeholder">
+                    <app-icon name="file" [size]="15" />
+                    <span>Evidence {{ slot }}</span>
+                    <span class="evidence__tag">verified</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <ul class="evidence">
+                @for (artifact of evidence(); track artifact.id) {
+                  <li>
+                    <button type="button" class="evidence__open" (click)="openEvidence(artifact)">
+                      <app-icon name="file" [size]="15" />
+                      <span class="evidence__copy">
+                        <span class="evidence__title">{{ artifact.title }}</span>
+                        <span class="evidence__meta">
+                          {{ evidenceTypeLabels[artifact.type] }} · {{ artifact.source }} ·
+                          {{ formatDate(artifact.collectedAt) }}
+                        </span>
+                      </span>
+                      <span class="evidence__tag">
+                        {{ evidenceReviewLabels[artifact.reviewStatus] }}
+                      </span>
+                      <app-icon name="chevron-right" [size]="14" />
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+
+          <label class="field panel__conclusion">
+            <span class="field__label">Conclusion</span>
+            <textarea
+              class="textarea"
+              placeholder="What does the evidence show, and what still needs remediation?"
+              [value]="draftConclusion()"
+              (input)="draftConclusion.set($any($event.target).value)"
+            ></textarea>
+            <span class="field__hint">
+              The conclusion is stored with the evidence of the current version.
+            </span>
+          </label>
+
+          <div class="panel__actions">
+            <button type="button" class="btn btn--sm" (click)="saveConclusion()">
+              Save conclusion
+            </button>
+            <button type="button" class="btn btn--sm btn--danger" (click)="reject()">
+              Reject
+            </button>
+            <button
+              type="button"
+              class="btn btn--sm btn--primary"
+              [disabled]="!item.canBeAccepted"
+              (click)="accept()"
+            >
+              <app-icon name="check" [size]="14" />
+              Accept
+            </button>
+          </div>
+
+          @if (!item.canBeAccepted) {
+            <p class="panel__rule">
+              Acceptance requires at least one piece of evidence. Upload one manually or through
+              MCP.
+            </p>
+          }
+
+          <button type="button" class="panel__na" (click)="markNotApplicable()">
+            Mark the requirement as not applicable
+          </button>
+        </div>
+      </aside>
+    } @else {
+      <aside class="card">
+        <app-empty-state
+          icon="file"
+          title="Select a requirement"
+          message="Choose a requirement from the list to see its evidence and conclusion."
+        />
+      </aside>
+    }
+  </div>
+
+  @if (openedEvidence(); as artifact) {
+    <app-modal [title]="artifact.title" (close)="closeEvidence()">
+      <div class="evidence-doc">
+        <dl class="evidence-doc__meta">
+          <div>
+            <dt>Type</dt>
+            <dd>{{ evidenceTypeLabels[artifact.type] }}</dd>
+          </div>
+          <div>
+            <dt>Source</dt>
+            <dd>{{ artifact.source }}</dd>
+          </div>
+          <div>
+            <dt>Collected</dt>
+            <dd>{{ formatDate(artifact.collectedAt) }}</dd>
+          </div>
+          <div>
+            <dt>Submitted by</dt>
+            <dd>{{ artifact.submittedBy }}</dd>
+          </div>
+          <div>
+            <dt>Review</dt>
+            <dd>{{ evidenceReviewLabels[artifact.reviewStatus] }}</dd>
+          </div>
+          <div class="evidence-doc__hash">
+            <dt>Hash</dt>
+            <dd>{{ artifact.hash }}</dd>
+          </div>
+        </dl>
+
+        <pre class="evidence-doc__body">{{ artifact.body }}</pre>
+
+        <div class="evidence-doc__actions">
+          <button type="button" class="btn" (click)="downloadEvidence(artifact)">
+            <app-icon name="download" [size]="14" />
+            Download
+          </button>
+          <button type="button" class="btn btn--primary" (click)="closeEvidence()">Close</button>
+        </div>
+      </div>
+    </app-modal>
+  }
+}

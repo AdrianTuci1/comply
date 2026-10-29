@@ -1,0 +1,213 @@
+/* The host is the grid item, so it must own the sticky behaviour. */
+:host {
+  position: sticky;
+  top: 60px;
+  display: block;
+  height: calc(100vh - 60px);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  padding: 14px 12px 16px;
+  background: var(--sidebar);
+  color: var(--sidebar-text);
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  overflow-y: auto;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav__label {
+  margin: 0;
+  padding: 12px 10px 6px;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--sidebar-muted);
+}
+
+.nav__label--spaced {
+  margin-top: 12px;
+}
+
+.nav__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--sidebar-text);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.nav__item app-icon {
+  color: #8a95a5;
+  transition: color 140ms ease;
+}
+
+.nav__item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.nav__item:hover app-icon {
+  color: #c4ccd8;
+}
+
+.nav__item.is-active {
+  background: rgba(16, 185, 129, 0.13);
+  color: #fff;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.nav__item.is-active app-icon {
+  color: #5ee0b5;
+}
+
+.sidebar__foot {
+  padding-top: 18px;
+}
+
+.plan {
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.plan__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.plan__name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #e7ebf1;
+}
+
+.plan__usage {
+  font-size: 11px;
+  color: #8a95a5;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan__hint {
+  margin: 4px 0 9px;
+  font-size: 11px;
+  color: #7d8794;
+}
+
+.plan__bar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  overflow: hidden;
+}
+
+.plan__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.plan__link {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11.5px;
+  font-weight: 560;
+  color: #9fe8cf;
+  text-decoration: none;
+}
+
+.plan__link:hover {
+  text-decoration: underline;
+}
+
+.scrim {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  :host {
+    position: static;
+    height: auto;
+  }
+
+  .scrim {
+    position: fixed;
+    inset: 60px 0 0;
+    z-index: 45;
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: rgba(6, 10, 14, 0.46);
+    cursor: pointer;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 60px;
+    bottom: 0;
+    left: 0;
+    z-index: 46;
+    width: min(286px, 84vw);
+    height: auto;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px 12px 16px;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-shadow: 24px 0 60px rgba(0, 0, 0, 0.28);
+    transform: translateX(-100%);
+    transition: transform 200ms ease;
+  }
+
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .nav {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  .nav__label {
+    display: block;
+  }
+
+  .sidebar__foot {
+    display: block;
+  }
+
+  .nav__item {
+    height: 40px;
+    padding: 0 10px;
+    white-space: normal;
+  }
+
+  .nav__item.is-active {
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+}

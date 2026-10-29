@@ -1,0 +1,199 @@
+@if (error()) {
+  <div class="notice notice--error" role="status">
+    <app-icon name="alert" [size]="16" />
+    <span>{{ error() }}</span>
+  </div>
+}
+
+@if (loading() && !assessment()) {
+  <section class="card">
+    <p class="soft">Loading the agent board…</p>
+  </section>
+} @else if (assessment(); as run) {
+  <a class="back-link" routerLink="/workspace/boards">
+    <app-icon name="chevron-right" [size]="14" />
+    Boards
+  </a>
+
+  <app-page-header
+    [eyebrow]="frameworkLabel(run.framework) + ' · Agent board'"
+    [title]="run.name"
+    [subtitle]="run.scope || 'Scope not confirmed yet'"
+  >
+    <a class="btn" routerLink="/workspace/agent">
+      <app-icon name="bot" [size]="16" />
+      Agent guide
+    </a>
+    <button type="button" class="btn btn--primary" (click)="load()">
+      <app-icon name="clock" [size]="16" />
+      Refresh
+    </button>
+  </app-page-header>
+
+  <section class="summary" aria-label="Agent board summary">
+    <div class="summary__head">
+      <span class="phase phase--{{ run.phase }}">{{ phaseLabel(run.phase) }}</span>
+      <span class="summary__coverage">{{ run.progress.percent }}% complete</span>
+    </div>
+    <app-progress-bar [value]="run.progress.percent" />
+    <dl class="summary__stats">
+      <div>
+        <dt>Completed</dt>
+        <dd>{{ run.progress.completed + run.progress.not_applicable }}/{{ run.progress.total }}</dd>
+      </div>
+      <div>
+        <dt>Evidence</dt>
+        <dd>{{ run.progress.evidence }}</dd>
+      </div>
+      <div>
+        <dt>Open</dt>
+        <dd [class.summary__danger]="run.progress.open > 0">{{ run.progress.open }}</dd>
+      </div>
+      <div>
+        <dt>Period</dt>
+        <dd>{{ formatDate(run.period.from) }} – {{ formatDate(run.period.to) }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  @if (run.next_actions.length > 0) {
+    <section class="next" aria-label="Next agent action">
+      <h2>Next action for the agent</h2>
+      @for (action of run.next_actions; track action.tool) {
+        <div class="next__item">
+          <code>{{ action.tool }}</code>
+          <span>{{ action.description }}</span>
+        </div>
+      }
+    </section>
+  }
+
+  <div class="language">
+    <app-icon name="globe" [size]="15" />
+    <p>
+      User language: <strong>any</strong>. Published language: <strong>English</strong>.
+      {{ run.language_policy.instruction }}
+    </p>
+  </div>
+
+  <section class="card requirements">
+    <div class="requirements__head">
+      <div class="chips" role="group" aria-label="Filter requirements by status">
+        @for (filter of filters; track filter.value) {
+          <button
+            type="button"
+            class="chip"
+            [class.is-active]="statusFilter() === filter.value"
+            (click)="statusFilter.set(filter.value)"
+          >
+            {{ filter.label }}
+            <span class="chip__count">{{ countFor(filter.value) }}</span>
+          </button>
+        }
+      </div>
+
+      <label class="search">
+        <span class="visually-hidden">Search requirements</span>
+        <app-icon name="search" [size]="16" />
+        <input
+          class="input"
+          type="search"
+          placeholder="Search by reference, title, or description"
+          [value]="query()"
+          (input)="query.set($any($event.target).value)"
+        />
+      </label>
+    </div>
+
+    @if (visible().length === 0) {
+      <app-empty-state
+        icon="search"
+        title="No requirements match the current filters"
+        message="Change the status or search for another reference."
+      />
+    } @else {
+      <ul class="req-list">
+        @for (item of visible(); track item.requirement_id) {
+          <li class="req">
+            <div class="req__top">
+              <span class="mono req__ref">{{ item.ref }}</span>
+              <span class="req__title">{{ item.title }}</span>
+              <span class="req__status req__status--{{ item.status }}">
+                {{ statusLabels[item.status] }}
+              </span>
+            </div>
+
+            @if (item.description) {
+              <p class="req__desc">{{ item.description }}</p>
+            }
+
+            @if (item.conclusion) {
+              <div class="req__conclusion">
+                <span class="req__label">Conclusion</span>
+                <p>{{ item.conclusion }}</p>
+              </div>
+            }
+
+            @if (item.evidence && item.evidence.length > 0) {
+              <details class="evidence">
+                <summary>
+                  <app-icon name="file" [size]="14" />
+                  {{ item.evidence.length }} evidence
+                </summary>
+                <ul>
+                  @for (artifact of item.evidence; track artifact.id) {
+                    <li>
+                      <div class="evidence__head">
+                        <strong>{{ artifact.title }}</strong>
+                        <span class="evidence__type">{{ artifact.type }}</span>
+                        <span class="evidence__count">{{ artifact.collectedAt.slice(0, 10) }}</span>
+                      </div>
+                      <p class="evidence__summary">{{ artifact.summary }}</p>
+                      <p class="evidence__meta">
+                        {{ artifact.source }}
+                        @if (artifact.citation) {
+                          · <span class="mono">{{ artifact.citation }}</span>
+                        }
+                      </p>
+                      <code class="evidence__hash">{{ artifact.hash }}</code>
+                    </li>
+                  }
+                </ul>
+              </details>
+            } @else {
+              <p class="req__no-evidence">
+                No evidence yet. The agent records the artifact the user describes before closing
+                this requirement.
+              </p>
+            }
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  @if (run.events.length > 0) {
+    <details class="events">
+      <summary>Agent timeline</summary>
+      <ul>
+        @for (event of run.events; track event.revision) {
+          <li>
+            <span class="mono">r{{ event.revision }}</span>
+            {{ event.message }}
+            <span class="soft">{{ relativeTime(event.at) }}</span>
+          </li>
+        }
+      </ul>
+    </details>
+  }
+} @else {
+  <section class="card">
+    <app-empty-state
+      icon="bot"
+      title="Agent board not found"
+      message="It may not exist for this organization yet. Return to the boards list or connect an agent."
+    >
+      <a class="btn" routerLink="/workspace/boards">Back to boards</a>
+    </app-empty-state>
+  </section>
+}

@@ -1,0 +1,139 @@
+:host {
+  display: block;
+}
+
+.toolbar__title {
+  display: flex;
+  align-items: baseline;
+  gap: 11px;
+}
+
+.toolbar h1 {
+  margin: 0;
+  color: #101828;
+  font-size: 25px;
+  font-weight: 640;
+  letter-spacing: -0.03em;
+}
+
+.count {
+  color: #98a2b3;
+  font-size: 11.5px;
+}
+
+.lead {
+  margin: 9px 0 22px;
+  max-width: 70ch;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.update {
+  padding: 20px 22px;
+  border: 1px solid #e6e8ec;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.update__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.update h2 {
+  margin: 0;
+  color: #101828;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 5px;
+  background: #f2f4f7;
+  color: #475467;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tag--security {
+  background: #eef4ff;
+  color: #3538cd;
+}
+
+.tag--subprocessors {
+  background: #fff4ed;
+  color: #b93815;
+}
+
+.tag--privacy {
+  background: #f4f0ff;
+  color: #6941c6;
+}
+
+.update__date {
+  margin-top: 5px;
+  color: #98a2b3;
+  font-size: 11.5px;
+}
+
+.update__body {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 9px;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.update__body.is-open {
+  display: block;
+}
+
+.toggle {
+  margin-top: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--trust-accent, #0f9d76);
+  font-size: 12px;
+  font-weight: 520;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.empty {
+  padding: 28px;
+  border: 1px solid #e6e8ec;
+  border-radius: 10px;
+  color: #667085;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .update {
+    padding: 16px;
+  }
+
+  .update__head {
+    gap: 10px;
+  }
+}

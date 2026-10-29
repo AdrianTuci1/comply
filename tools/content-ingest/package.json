@@ -1,0 +1,26 @@
+{
+  "name": "@comply/content-ingest",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Extrage cerințe din documente oficiale, cu poartă de revizuire umană.",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "extract": "node cli.mjs extract",
+    "validate": "node cli.mjs validate --all",
+    "build": "node cli.mjs build --all",
+    "list": "node cli.mjs list"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.4.299"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "jszip": "^3.10.2"
+  }
+}

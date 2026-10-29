@@ -1,0 +1,345 @@
+<app-page-header
+  eyebrow="Workspace"
+  title="Assessment boards"
+  [subtitle]="
+    activeCount() +
+    ' active of ' +
+    boards().length +
+    ' boards for ' +
+    organization().name +
+    ', with export and import history'
+  "
+>
+  <button type="button" class="btn" (click)="fileInput.click()">
+    <app-icon name="upload" [size]="16" />
+    Import
+  </button>
+  <input
+    #fileInput
+    class="visually-hidden"
+    type="file"
+    accept="application/json,.json"
+    (change)="onImport($event)"
+  />
+  <button type="button" class="btn btn--primary" (click)="openCreate()">
+    <app-icon name="plus" [size]="16" />
+    New board
+  </button>
+</app-page-header>
+
+@if (notice()) {
+  <div class="notice" [class.notice--error]="noticeTone() === 'error'" role="status">
+    <app-icon [name]="noticeTone() === 'error' ? 'alert' : 'check'" [size]="16" />
+    <span>{{ notice() }}</span>
+    <button
+      type="button"
+      class="btn btn--icon"
+      aria-label="Dismiss message"
+      (click)="notice.set('')"
+    >
+      <app-icon name="x" [size]="15" />
+    </button>
+  </div>
+}
+
+<div class="toolbar boards__toolbar">
+  <div class="chips" role="group" aria-label="Filter by framework">
+    @for (chip of filterChips; track chip.value) {
+      <button
+        type="button"
+        class="chip"
+        [class.is-active]="frameworkFilter() === chip.value"
+        (click)="frameworkFilter.set(chip.value)"
+      >
+        {{ chip.label }}
+      </button>
+    }
+  </div>
+
+  <div class="boards__tools">
+    @if (inactiveCount() > 0) {
+      <button
+        type="button"
+        class="chip"
+        [class.is-active]="showInactive()"
+        [attr.aria-pressed]="showInactive()"
+        (click)="showInactive.set(!showInactive())"
+      >
+        <app-icon name="eye" [size]="14" />
+        Deactivated ({{ inactiveCount() }})
+      </button>
+    }
+
+    <label class="search">
+      <span class="visually-hidden">Search boards</span>
+      <app-icon name="search" [size]="16" />
+      <input
+        class="input"
+        type="search"
+        placeholder="Search by name or owner"
+        [value]="query()"
+        (input)="query.set($any($event.target).value)"
+      />
+    </label>
+  </div>
+</div>
+
+@if (agentLoading() && agentBoards().length === 0) {
+  <section class="card">
+    <p class="soft">Loading agent boards…</p>
+  </section>
+}
+
+@if (agentBoards().length > 0) {
+  <section class="agent-section" aria-label="Agent boards">
+    <div class="section-head">
+      <div>
+        <h2>Agent boards</h2>
+        <p class="soft">
+          Guided over MCP. Evidence and conclusions arrive from the connected agent and stay in sync
+          with the assessment.
+        </p>
+      </div>
+      <div class="section-head__actions">
+        <button type="button" class="btn btn--sm" (click)="loadAgentBoards()">
+          <app-icon name="clock" [size]="14" />
+          Refresh
+        </button>
+        <a class="btn btn--sm" routerLink="/workspace/agent">
+          Agent guide
+          <app-icon name="arrow-right" [size]="14" />
+        </a>
+      </div>
+    </div>
+
+    @if (visibleAgentBoards().length === 0) {
+      <p class="soft">No agent boards match the current filters.</p>
+    } @else {
+      <div class="board-grid">
+        @for (run of visibleAgentBoards(); track run.assessment_id) {
+          <article class="card board-card board-card--agent">
+            <div class="board-card__head">
+              <span class="fw-chip">{{ frameworkLabel(run.framework) }}</span>
+              <span class="agent-phase agent-phase--{{ run.phase }}">{{
+                phaseLabel(run.phase)
+              }}</span>
+            </div>
+
+            <a
+              class="board-card__title"
+              [routerLink]="['/workspace/boards/agent', run.assessment_id]"
+            >
+              {{ run.name }}
+            </a>
+            <p class="board-card__period">
+              {{ year(run.period.from) }}–{{ year(run.period.to) }} · guided by your agent
+            </p>
+
+            <div class="board-card__progress">
+              <div class="board-card__progress-head">
+                <span class="muted">Progress</span>
+                <span class="board-card__pct">{{ run.progress.percent }}%</span>
+              </div>
+              <app-progress-bar [value]="run.progress.percent" />
+            </div>
+
+            <dl class="board-card__stats">
+              <div>
+                <dt>Completed</dt>
+                <dd>
+                  {{ run.progress.completed + run.progress.not_applicable }}/{{
+                    run.progress.total
+                  }}
+                </dd>
+              </div>
+              <div>
+                <dt>Evidence</dt>
+                <dd>{{ run.progress.evidence }}</dd>
+              </div>
+              <div>
+                <dt>Open</dt>
+                <dd [class.board-card__danger]="run.progress.open > 0">
+                  {{ run.progress.open }}
+                </dd>
+              </div>
+            </dl>
+
+            <div class="board-card__foot">
+              <p class="board-card__meta">
+                {{ run.scope || 'Scope not confirmed' }} · {{ relativeTime(run.updated_at) }}
+              </p>
+              <div class="board-card__actions">
+                <a
+                  class="btn btn--sm"
+                  [routerLink]="['/workspace/boards/agent', run.assessment_id]"
+                >
+                  Open
+                  <app-icon name="arrow-right" [size]="14" />
+                </a>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+}
+
+@if (visible().length === 0) {
+  @if (agentBoards().length === 0) {
+    <section class="card">
+      <app-empty-state
+        icon="boards"
+        title="No boards match the current filters"
+        message="Create a new board or import one from a colleague or auditor."
+      >
+        <button type="button" class="btn btn--primary" (click)="openCreate()">
+          <app-icon name="plus" [size]="16" />
+          New board
+        </button>
+      </app-empty-state>
+    </section>
+  }
+} @else {
+  @if (agentBoards().length > 0) {
+    <div class="section-head">
+      <div>
+        <h2>Team boards</h2>
+        <p class="soft">Created and reviewed by the team from the requirement library.</p>
+      </div>
+    </div>
+  }
+
+  <div class="board-grid">
+    @for (board of visible(); track board.id) {
+      <article class="card board-card" [class.board-card--inactive]="!board.isActive">
+        <div class="board-card__head">
+          <span class="fw-chip">{{ board.framework.label }}</span>
+          <div class="board-card__badges">
+            @if (!board.isActive) {
+              <span class="inactive-pill">Deactivated</span>
+            }
+            <app-status-badge kind="board" [status]="board.status" />
+          </div>
+        </div>
+
+        <a class="board-card__title" [routerLink]="['/workspace/boards', board.id]">
+          {{ board.name }}
+        </a>
+        <p class="board-card__period">
+          {{ board.frameworkVersion }} · {{ year(board.periodFrom) }}–{{ year(board.periodTo) }}
+        </p>
+
+        <div class="board-card__progress">
+          <div class="board-card__progress-head">
+            <span class="muted">Coverage</span>
+            <span class="board-card__pct">{{ board.coverage }}%</span>
+          </div>
+          <app-progress-bar [value]="board.coverage" />
+        </div>
+
+        <dl class="board-card__stats">
+          <div>
+            <dt>Accepted</dt>
+            <dd>{{ board.accepted }}/{{ board.total }}</dd>
+          </div>
+          <div>
+            <dt>Proposals</dt>
+            <dd>{{ board.proposed }}</dd>
+          </div>
+          <div>
+            <dt>Gaps</dt>
+            <dd [class.board-card__danger]="board.gaps > 0">{{ board.gaps }}</dd>
+          </div>
+        </dl>
+
+        <div class="board-card__foot">
+          <p class="board-card__meta">{{ board.owner }} · {{ relativeTime(board.updatedAt) }}</p>
+          <div class="board-card__actions">
+            <button type="button" class="btn btn--sm" (click)="exportBoard(board)">
+              <app-icon name="download" [size]="14" />
+              Export
+            </button>
+            <a class="btn btn--sm" [routerLink]="['/workspace/boards', board.id]">
+              Open
+              <app-icon name="arrow-right" [size]="14" />
+            </a>
+            @if (board.isActive) {
+              <button type="button" class="btn btn--sm" (click)="deactivate(board)">
+                Deactivate
+              </button>
+            } @else {
+              <button type="button" class="btn btn--sm" (click)="reactivate(board)">
+                Reactivate
+              </button>
+            }
+          </div>
+        </div>
+      </article>
+    }
+  </div>
+}
+
+@if (createOpen()) {
+  <app-modal title="New board" (close)="createOpen.set(false)">
+    <form class="create" (submit)="$event.preventDefault(); createBoard()">
+      <label class="field">
+        <span class="field__label">Board name</span>
+        <input
+          class="input"
+          type="text"
+          placeholder="e.g. NIS2 — 2027 assessment"
+          [value]="createName()"
+          (input)="createName.set($any($event.target).value); createError.set('')"
+          autofocus
+        />
+        @if (createError()) {
+          <span class="field__error">{{ createError() }}</span>
+        }
+      </label>
+
+      <label class="field">
+        <span class="field__label">Framework</span>
+        <select
+          class="select"
+          [value]="createFramework()"
+          (change)="createFramework.set($any($event.target).value)"
+        >
+          @for (framework of frameworks; track framework.id) {
+            <option [value]="framework.id">{{ framework.label }}</option>
+          }
+        </select>
+        <span class="field__hint">
+          {{ libraryCount() }} requirements from the current library will be added with their
+          descriptions. The content version is fixed when the board is created.
+        </span>
+      </label>
+
+      <div class="create__dates">
+        <label class="field">
+          <span class="field__label">Period from</span>
+          <input
+            class="input"
+            type="date"
+            [value]="createFrom()"
+            (change)="patchDate('createFrom', $any($event.target).value)"
+          />
+        </label>
+        <label class="field">
+          <span class="field__label">To</span>
+          <input
+            class="input"
+            type="date"
+            [value]="createTo()"
+            (change)="patchDate('createTo', $any($event.target).value)"
+          />
+        </label>
+      </div>
+
+      <div class="create__actions">
+        <button type="button" class="btn" (click)="createOpen.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary">Create board</button>
+      </div>
+    </form>
+  </app-modal>
+}

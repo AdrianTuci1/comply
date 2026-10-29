@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comply.local/contracts/content/requirement.schema.json",
+  "title": "Compliance requirement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "frameworkId",
+    "version",
+    "docType",
+    "ref",
+    "title",
+    "text",
+    "theme",
+    "sourceRef"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "minLength": 3
+    },
+    "frameworkId": {
+      "type": "string",
+      "enum": ["nis2", "iso27001", "ai-act"]
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]{4}\\.[0-9]+\\.[0-9]+$"
+    },
+    "docType": { "const": "requirement" },
+    "ref": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "title": { "type": "string", "minLength": 5, "maxLength": 200 },
+    "text": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 2000,
+      "description": "Formulare proprie. Pentru sursele licențiate nu reproduce textul standardului."
+    },
+    "theme": { "type": "string", "minLength": 2, "maxLength": 80 },
+    "sourceRef": {
+      "type": "string",
+      "minLength": 3,
+      "description": "Document, secțiune și pagină sau linie, pentru audit."
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewer", "reviewedAt", "reformulated"],
+      "properties": {
+        "reviewer": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "reviewedAt": { "type": "string", "format": "date-time" },
+        "reformulated": { "type": "boolean" }
+      }
+    }
+  }
+}

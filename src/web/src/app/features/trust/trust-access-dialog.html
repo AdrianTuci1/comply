@@ -1,0 +1,90 @@
+<app-modal [title]="title()" closeLabel="Close" (close)="close.emit()">
+  @if (mailtoHref(); as href) {
+    <div class="success">
+      <span class="success__icon"><app-icon name="check" [size]="22" /></span>
+      <h3>Request ready</h3>
+      <p>We prepared the message for {{ organizationName() }}. Open your email app to send it.</p>
+      <div class="success__actions">
+        <a class="primary" [href]="href">
+          <app-icon name="mail" [size]="15" />
+          Open email
+        </a>
+        <button type="button" class="secondary" (click)="close.emit()">Close</button>
+      </div>
+    </div>
+  } @else {
+    <p class="intro">{{ intro() }}</p>
+
+    <form class="form" novalidate (submit)="$event.preventDefault(); submit()">
+      @if (isAccess()) {
+        <div class="grid">
+          <label class="field">
+            <span>Name</span>
+            <input
+              type="text"
+              autocomplete="name"
+              placeholder="Full name"
+              [value]="name()"
+              (input)="update('name', $any($event.target).value)"
+            />
+          </label>
+          <label class="field">
+            <span>Email</span>
+            <input
+              type="email"
+              autocomplete="email"
+              placeholder="name@company.com"
+              [value]="email()"
+              (input)="update('email', $any($event.target).value)"
+            />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Company</span>
+          <input
+            type="text"
+            autocomplete="organization"
+            placeholder="Optional"
+            [value]="company()"
+            (input)="update('company', $any($event.target).value)"
+          />
+        </label>
+
+        <label class="field">
+          <span>Message</span>
+          <textarea
+            rows="3"
+            placeholder="Which documents do you need, and for what purpose?"
+            [value]="message()"
+            (input)="update('message', $any($event.target).value)"
+          ></textarea>
+        </label>
+      } @else {
+        <label class="field">
+          <span>Email</span>
+          <input
+            type="email"
+            autocomplete="email"
+            placeholder="name@company.com"
+            [value]="email()"
+            (input)="update('email', $any($event.target).value)"
+          />
+        </label>
+      }
+
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+
+      <button type="submit" class="primary primary--full">
+        {{ isAccess() ? 'Prepare request' : 'Prepare subscription' }}
+      </button>
+
+      <p class="note">
+        The message is sent from your email app to {{ contactEmail() }}. This page does not store
+        your data.
+      </p>
+    </form>
+  }
+</app-modal>
