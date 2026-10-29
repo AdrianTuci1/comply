@@ -78,8 +78,17 @@ test("serves the Scalar reference and its OpenAPI contract", async () => {
   const page = await serve("/docs/");
   assert.equal(page.status, 200);
   assert.match(page.headers["content-type"], /text\/html/);
-  assert.match(page.body.toString(), /@scalar\/api-reference/);
+  assert.match(
+    page.body.toString(),
+    /\/docs\/vendor\/scalar-1\.76\.2-1a98470f\.js/,
+  );
   assert.match(page.body.toString(), /\/docs\/openapi\.json/);
+  assert.doesNotMatch(page.body.toString(), /cdn\.jsdelivr\.net/);
+
+  const scalar = await serve("/docs/vendor/scalar-1.76.2-1a98470f.js");
+  assert.equal(scalar.status, 200);
+  assert.match(scalar.headers["content-type"], /javascript/);
+  assert.match(scalar.headers["cache-control"], /immutable/);
 
   const noSlash = await serve("/docs");
   assert.equal(noSlash.status, 200);

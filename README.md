@@ -471,7 +471,9 @@ covers the REST API, sign-in, and the MCP JSON-RPC endpoint. The contract itself
 [`src/web/public/docs/openapi.json`](src/web/public/docs/openapi.json).
 
 The page is a static asset, so it works on the same host as the API without a separate
-documentation service. Both routes are public.
+documentation service. Both routes are public. The Scalar browser bundle is vendored
+under `src/web/public/docs/vendor/`, so the reference also works on an air-gapped
+self-hosted installation.
 
 ## Tests
 
