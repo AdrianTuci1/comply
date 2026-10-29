@@ -468,6 +468,13 @@ h2 {
   text-align: center;
 }
 
+.legal__link {
+  margin-left: 6px;
+  color: #344054;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 @media (max-width: 1060px) {
   .panel {
     grid-template-columns: minmax(0, 1fr);

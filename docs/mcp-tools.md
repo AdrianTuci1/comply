@@ -43,6 +43,9 @@ Each response includes:
 }
 ```
 
+A public reference for the REST API and MCP endpoint is served at `/docs`, with the
+OpenAPI contract at `/docs/openapi.json`.
+
 The key created in **Settings → MCP access and API keys** carries the tenant in its
 `sk_mcp_<tenant>_…` prefix. The API derives the tenant from the key, rejects a key whose
 tenant does not match the request, and accepts no other tenant header. A key is valid

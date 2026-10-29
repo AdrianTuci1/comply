@@ -463,6 +463,16 @@ endpoint accepts user-created sources or requirement edits.
 | `POST`   | `/api/access/keys`            | create a tenant-bound MCP key; the secret is returned once                             |
 | `DELETE` | `/api/access/keys/:id`        | revoke an MCP key                                                                      |
 
+## API documentation
+
+The public reference is served at `/docs`. It renders the OpenAPI contract with Scalar and
+covers the REST API, sign-in, and the MCP JSON-RPC endpoint. The contract itself is at
+`/docs/openapi.json`; the source lives in
+[`src/web/public/docs/openapi.json`](src/web/public/docs/openapi.json).
+
+The page is a static asset, so it works on the same host as the API without a separate
+documentation service. Both routes are public.
+
 ## Tests
 
 ```bash

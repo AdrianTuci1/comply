@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Comply API and MCP reference: assessments, managed requirements, evidence, access keys, and the guided agent workflow."
+    />
+    <title>Comply API reference</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #ffffff;
+      }
+
+      .fallback {
+        max-width: 680px;
+        margin: 80px auto;
+        padding: 0 24px;
+        color: #344054;
+        font:
+          15px/1.6 ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
+
+      .fallback h1 {
+        margin: 0 0 12px;
+        color: #101828;
+        font-size: 22px;
+      }
+
+      .fallback a {
+        color: #0f9d76;
+      }
+
+      .fallback code {
+        padding: 2px 5px;
+        border-radius: 4px;
+        background: #f2f4f7;
+      }
+    </style>
+  </head>
+  <body>
+    <script id="api-reference"></script>
+    <script>
+      const specUrl = '/docs/openapi.json';
+
+      fetch(specUrl)
+        .then((response) => {
+          if (!response.ok) throw new Error(`OpenAPI request returned ${response.status}`);
+          return response.text();
+        })
+        .then((spec) => {
+          const reference = document.getElementById('api-reference');
+          reference.dataset.configuration = JSON.stringify({
+            theme: 'default',
+            darkMode: false,
+            hideDarkModeToggle: true,
+          });
+          reference.dataset.spec = spec;
+        })
+        .catch((error) => {
+          const main = document.createElement('main');
+          main.className = 'fallback';
+
+          const title = document.createElement('h1');
+          title.textContent = 'API reference is unavailable';
+
+          const detail = document.createElement('p');
+          detail.textContent = `The OpenAPI contract could not be loaded from /docs/openapi.json. ${String(
+            error.message ?? error,
+          )}`;
+
+          const back = document.createElement('p');
+          const link = document.createElement('a');
+          link.href = '/';
+          link.textContent = 'Back to Comply';
+          back.append(link);
+
+          main.append(title, detail, back);
+          document.body.replaceChildren(main);
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  </body>
+</html>
