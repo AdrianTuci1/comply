@@ -8,7 +8,7 @@ Conținutul de conformitate stă în același repo până când recenzorii devin
 ├─ apps/
 │  ├─ web/                         # Angular: sign-in, portal, workspace, trust center
 │  ├─ api-node/                    # API Node: conținut, ingest, MCP, auth, static Angular
-│  ├─ api-dotnet/                  # API principal: .NET 8 isolated Functions + PostgreSQL
+│  ├─ api-dotnet/                  # API principal: .NET 8 isolated Functions + Cosmos DB
 │  ├─ functions-node/              # wrapper Azure Functions pentru instalarea one-container
 │  └─ landing/                     # site de marketing static
 ├─ bin/comply.mjs                  # launcher npx pentru imaginea Docker
@@ -18,13 +18,13 @@ Conținutul de conformitate stă în același repo până când recenzorii devin
 ├─ deploy/
 │  ├─ docker-compose.yml           # instalarea Node one-container
 │  ├─ init.sh
-│  └─ dotnet/                      # stack local split: PostgreSQL, Functions, Angular static
+│  └─ dotnet/                      # stack local split: Cosmos DB emulator, Functions, Angular static
 ├─ docs/
 │  ├─ agents/                      # specificații pentru agenți
 │  ├─ adr/                         # decizii arhitecturale numerotate
 │  └─ mcp-tools.md
 ├─ evals/                          # set de aur pentru citări
-├─ infra/bicep/                    # Function App, PostgreSQL, Static Web App
+├─ infra/bicep/                    # Function App, Cosmos DB, Static Web App
 ├─ samples/                        # tenant demo și manifest
 ├─ tools/
 │  ├─ content-ingest/              # extrage, validează, construiește bundle-uri
@@ -43,12 +43,12 @@ Conținutul de conformitate stă în același repo până când recenzorii devin
 | --- | --- | --- |
 | `apps/web` | interfața Angular | standalone components, signals, config runtime `config.js` |
 | `apps/api-node` | conținut, ingest, MCP, auth, static Angular | fără dependențe npm; Node 22+ |
-| `apps/api-dotnet` | API principal, MCP, ingest, auth, PostgreSQL | .NET 8 isolated worker; fără static hosting |
+| `apps/api-dotnet` | API principal, MCP, ingest, auth, Cosmos DB | .NET 8 isolated worker; fără static hosting |
 | `apps/functions-node` | entry point Azure Functions pentru calea Node | refolosește `createApp()` din `api-node` |
 | `apps/landing` | site static, separat de aplicație | fără build Angular |
 | `contracts/` | scheme JSON, OpenAPI, unelte MCP | se schimbă înainte de cod |
 | `content/` | date de conformitate | fără logică executabilă |
-| `deploy/dotnet/` | stack local pentru deploy-ul split | PostgreSQL + Azurite + Functions + nginx |
+| `deploy/dotnet/` | stack local pentru deploy-ul split | Cosmos DB emulator + Azurite + Functions + nginx |
 | `infra/bicep/` | instalare în cloud-ul clientului | același template pentru toți |
 | `evals/` | set de aur pentru citări | rulează la orice schimbare de prompt |
 | `samples/` | tenant demo și manifest | folosit în fiecare demonstrație |

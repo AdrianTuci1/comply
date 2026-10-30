@@ -1,7 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
 using Comply.Functions.Auth;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Comply.Functions.Data;
@@ -36,56 +35,35 @@ public static class Slugs
 }
 
 /// <summary>
-/// Persistence for accounts and external logins. All reads and writes use a fresh context from
-/// the factory so the singleton services stay safe to reuse across invocations.
+/// Persistence for accounts and external logins. All reads and writes go through
+/// <see cref="IComplyStore"/>, so the same logic runs on Cosmos DB in production and on the
+/// in-memory EF adapter in tests.
 /// </summary>
-public sealed class UserDirectory(ComplyDatabase database, TimeProvider time, ILogger<UserDirectory>? logger = null)
+public sealed class UserDirectory(IComplyStore store, TimeProvider time, ILogger<UserDirectory>? logger = null)
 {
     private static readonly SemaphoreSlim SetupGate = new(1, 1);
 
-    private readonly ComplyDatabase _database = database;
+    private readonly IComplyStore _store = store;
     private readonly TimeProvider _time = time;
     private readonly ILogger<UserDirectory>? _logger = logger;
 
-    public bool IsAvailable => _database.IsConfigured;
+    public bool IsAvailable => _store.IsConfigured;
 
-    public async Task<int> CountAsync(CancellationToken cancellationToken)
-    {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        return await context.Users.CountAsync(cancellationToken);
-    }
+    public Task<int> CountAsync(CancellationToken cancellationToken) =>
+        _store.CountUsersAsync(cancellationToken);
 
-    public async Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken)
-    {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        return await context.Users
-            .Include(user => user.Organization)
-            .SingleOrDefaultAsync(user => user.Email == email, cancellationToken);
-    }
+    public Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken) =>
+        _store.FindUserByEmailAsync(email, cancellationToken);
 
-    public async Task<User?> FindByIdAsync(string id, CancellationToken cancellationToken)
-    {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        return await context.Users
-            .Include(user => user.Organization)
-            .SingleOrDefaultAsync(user => user.Id == id, cancellationToken);
-    }
+    public Task<User?> FindByIdAsync(string id, CancellationToken cancellationToken) =>
+        _store.FindUserByIdAsync(id, cancellationToken);
 
-    public async Task<Organization?> FindOrganizationBySlugAsync(string slug, CancellationToken cancellationToken)
-    {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        return await context.Organizations
-            .SingleOrDefaultAsync(organization => organization.Slug == slug, cancellationToken);
-    }
+    public Task<Organization?> FindOrganizationBySlugAsync(string slug, CancellationToken cancellationToken) =>
+        _store.FindOrganizationBySlugAsync(slug, cancellationToken);
 
     /// <summary>The oldest organization, used as the single-tenant fallback in development.</summary>
-    public async Task<Organization?> FirstOrganizationAsync(CancellationToken cancellationToken)
-    {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        return await context.Organizations
-            .OrderBy(organization => organization.CreatedAt)
-            .FirstOrDefaultAsync(cancellationToken);
-    }
+    public Task<Organization?> FirstOrganizationAsync(CancellationToken cancellationToken) =>
+        _store.FirstOrganizationAsync(cancellationToken);
 
     /// <summary>
     /// Creates the first organization and its admin. Registration is only open while the
@@ -101,16 +79,14 @@ public sealed class UserDirectory(ComplyDatabase database, TimeProvider time, IL
         await SetupGate.WaitAsync(cancellationToken);
         try
         {
-            await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-
-            if (await context.Users.AnyAsync(cancellationToken))
+            if (await _store.CountUsersAsync(cancellationToken) > 0)
             {
                 throw new AuthException(
                     "Setup is already complete. Ask an administrator for an account.",
                     403);
             }
 
-            if (await context.Users.AnyAsync(user => user.Email == email, cancellationToken))
+            if (await _store.UserEmailExistsAsync(email, cancellationToken))
             {
                 throw new AuthException("An account with this email already exists.", 409);
             }
@@ -120,7 +96,7 @@ public sealed class UserDirectory(ComplyDatabase database, TimeProvider time, IL
             {
                 Id = Ids.New("org"),
                 Name = organizationName,
-                Slug = await UniqueSlugAsync(context, organizationName, cancellationToken),
+                Slug = await UniqueSlugAsync(organizationName, cancellationToken),
                 CreatedAt = now,
             };
 
@@ -137,14 +113,12 @@ public sealed class UserDirectory(ComplyDatabase database, TimeProvider time, IL
                 LastLoginAt = now,
             };
 
-            context.Organizations.Add(organization);
-            context.Users.Add(user);
-
             try
             {
-                await context.SaveChangesAsync(cancellationToken);
+                await _store.AddOrganizationAsync(organization, cancellationToken);
+                await _store.AddUserAsync(user, cancellationToken);
             }
-            catch (DbUpdateException exception)
+            catch (StoreConflictException exception)
             {
                 _logger?.LogWarning(exception, "First-user registration failed to save.");
                 throw new AuthException("An account with this email already exists.", 409);
@@ -168,33 +142,25 @@ public sealed class UserDirectory(ComplyDatabase database, TimeProvider time, IL
         await SetupGate.WaitAsync(cancellationToken);
         try
         {
-            await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-
-            var user = await context.Users
-                .Include(item => item.Organization)
-                .SingleOrDefaultAsync(item => item.Email == identity.Email, cancellationToken);
-
+            var user = await _store.FindUserByEmailAsync(identity.Email, cancellationToken);
             var now = _time.GetUtcNow();
 
             if (user is null)
             {
-                var organization = await context.Organizations
-                    .OrderBy(item => item.CreatedAt)
-                    .FirstOrDefaultAsync(cancellationToken);
-
+                var organization = await _store.FirstOrganizationAsync(cancellationToken);
                 if (organization is null)
                 {
                     organization = new Organization
                     {
                         Id = Ids.New("org"),
                         Name = "Organization",
-                        Slug = await UniqueSlugAsync(context, "Organization", cancellationToken),
+                        Slug = await UniqueSlugAsync("Organization", cancellationToken),
                         CreatedAt = now,
                     };
-                    context.Organizations.Add(organization);
+                    await _store.AddOrganizationAsync(organization, cancellationToken);
                 }
 
-                var firstUser = !await context.Users.AnyAsync(cancellationToken);
+                var firstUser = await _store.CountUsersAsync(cancellationToken) == 0;
                 user = new User
                 {
                     Id = Ids.New("usr"),
@@ -208,42 +174,47 @@ public sealed class UserDirectory(ComplyDatabase database, TimeProvider time, IL
                     LastLoginAt = now,
                     Organization = organization,
                 };
-                context.Users.Add(user);
+
+                try
+                {
+                    await _store.AddUserAsync(user, cancellationToken);
+                }
+                catch (StoreConflictException)
+                {
+                    // A concurrent callback may have written the same email first.
+                    _logger?.LogWarning("External sign-in raced with another request; reloading the account.");
+                    return await ReloadAsync(identity.Email, cancellationToken);
+                }
             }
             else
             {
                 user.LastLoginAt = now;
                 if (!user.Providers.Contains(identity.Provider)) user.Providers.Add(identity.Provider);
+                await _store.SaveUserAsync(user, cancellationToken);
             }
 
-            var linked = await context.ExternalLogins.AnyAsync(
-                login => login.Provider == identity.Provider && login.Subject == identity.Subject,
+            var linked = await _store.ExternalLoginExistsAsync(
+                identity.Provider,
+                identity.Subject,
                 cancellationToken);
 
             if (!linked)
             {
-                context.ExternalLogins.Add(new ExternalLogin
+                try
                 {
-                    Id = Ids.New("ext"),
-                    UserId = user.Id,
-                    Provider = identity.Provider,
-                    Subject = identity.Subject,
-                    CreatedAt = now,
-                });
-            }
-
-            try
-            {
-                await context.SaveChangesAsync(cancellationToken);
-            }
-            catch (DbUpdateException exception)
-            {
-                // A concurrent callback may have written the same link or email first.
-                _logger?.LogWarning(exception, "External sign-in raced with another request; reloading the account.");
-                await using var reload = await _database.Factory.CreateDbContextAsync(cancellationToken);
-                return await reload.Users
-                    .Include(item => item.Organization)
-                    .SingleAsync(item => item.Email == identity.Email, cancellationToken);
+                    await _store.AddExternalLoginAsync(new ExternalLogin
+                    {
+                        Id = ExternalLoginId(identity.Provider, identity.Subject),
+                        UserId = user.Id,
+                        Provider = identity.Provider,
+                        Subject = identity.Subject,
+                        CreatedAt = now,
+                    }, cancellationToken);
+                }
+                catch (StoreConflictException)
+                {
+                    // Another instance linked the same identity first; the account is already valid.
+                }
             }
 
             return user;
@@ -256,12 +227,11 @@ public sealed class UserDirectory(ComplyDatabase database, TimeProvider time, IL
 
     public async Task TouchLoginAsync(string userId, CancellationToken cancellationToken)
     {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        var user = await context.Users.SingleOrDefaultAsync(item => item.Id == userId, cancellationToken);
+        var user = await _store.FindUserByIdAsync(userId, cancellationToken);
         if (user is null) return;
 
         user.LastLoginAt = _time.GetUtcNow();
-        await context.SaveChangesAsync(cancellationToken);
+        await _store.SaveUserAsync(user, cancellationToken);
     }
 
     public static string ResolveName(string? name, string email)
@@ -276,15 +246,21 @@ public sealed class UserDirectory(ComplyDatabase database, TimeProvider time, IL
         return display.Length == 0 ? email : display;
     }
 
-    private static async Task<string> UniqueSlugAsync(
-        ComplyDbContext context,
-        string name,
-        CancellationToken cancellationToken)
+    /// <summary>A Cosmos-safe, stable document id for the provider+subject pair.</summary>
+    public static string ExternalLoginId(string provider, string subject) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{provider}\n{subject}")))
+            .ToLowerInvariant();
+
+    private async Task<User> ReloadAsync(string email, CancellationToken cancellationToken) =>
+        await _store.FindUserByEmailAsync(email, cancellationToken)
+        ?? throw new AuthException("External sign-in could not be completed.", 409);
+
+    private async Task<string> UniqueSlugAsync(string name, CancellationToken cancellationToken)
     {
         var baseSlug = Slugs.From(name);
         var slug = baseSlug;
         var suffix = 2;
-        while (await context.Organizations.AnyAsync(item => item.Slug == slug, cancellationToken))
+        while (await _store.OrganizationSlugExistsAsync(slug, cancellationToken))
         {
             slug = $"{baseSlug}-{suffix}";
             suffix++;

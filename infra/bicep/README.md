@@ -5,7 +5,7 @@ The deployment has three independent pieces:
 | Piece | Resource | Serves |
 | --- | --- | --- |
 | API + MCP | Linux **.NET 8 isolated** Function App (`DOTNET-ISOLATED\|8.0`) | `/api/*`, `/mcp`, `/healthz` |
-| State | **PostgreSQL Flexible Server 16**, database `comply` | users, assessments, requirements, evidence, MCP keys |
+| State | **Azure Cosmos DB for NoSQL**, serverless, database `comply` | users, assessments, requirements, evidence, MCP keys |
 | UI | **Azure Static Web App** (Free or Standard) | the Angular build only |
 
 The Static Web App is not linked to the Function App. The browser loads the bundle from the
@@ -17,9 +17,9 @@ cacheable and can move to a CDN or another static host without touching the API.
 
 - a `Standard_LRS` storage account (Functions host state) with a private `comply` blob container;
 - a `Y1` Linux consumption plan and the Function App on the .NET 8 isolated worker;
-- a Burstable `Standard_B1ms` PostgreSQL 16 server with 32 GB storage, 7-day backups, zone
-  redundancy disabled, the `comply` database and the `AllowAzureServices` firewall rule
-  (`0.0.0.0`–`0.0.0.0`);
+- a serverless Cosmos DB account with the `comply` database and six containers:
+  `organizations` and `users` partitioned by `/id`, `email_locks` and `external_logins`
+  partitioned by `/id`, and `assessments` and `mcp_keys` partitioned by `/organizationId`;
 - a Static Web App with an empty site, ready for `swa deploy`.
 
 All names are deterministic: `uniqueString(resourceGroup().id)` is appended to `appName`.
@@ -28,15 +28,14 @@ All names are deterministic: `uniqueString(resourceGroup().id)` is appended to `
 
 - Azure CLI 2.50+ with the Bicep CLI (`az bicep install`); `az bicep version` must succeed.
 - Contributor on the resource group: the template reads the storage account keys
-  (`listKeys`) to build `AzureWebJobsStorage` and `COMPLY_BLOB_CONNECTION_STRING`.
-- An existing resource group in a region that offers PostgreSQL Flexible Server 16.
-- The `Microsoft.Web` and `Microsoft.DBforPostgreSQL` providers registered in the subscription
-  (`az provider register -n Microsoft.DBforPostgreSQL`).
+  (`listKeys`) to build `AzureWebJobsStorage` and `COMPLY_BLOB_CONNECTION_STRING`, and the
+  Cosmos DB connection string (`listConnectionStrings`).
+- An existing resource group in a region that offers Cosmos DB serverless.
+- The `Microsoft.Web` and `Microsoft.DocumentDB` providers registered in the subscription
+  (`az provider register -n Microsoft.DocumentDB`).
 - The Static Web App **Free** SKU is only available in a few regions. The default
   `staticSiteLocation` is `westeurope`; use `Standard` if the site must live elsewhere.
 - A session secret: `openssl rand -hex 32`.
-- A PostgreSQL administrator password (8+ characters, three of uppercase, lowercase, digits,
-  symbols). Pass it as a `@secure()` parameter; it is never written into the template.
 
 ## Deploy
 
@@ -44,8 +43,7 @@ All names are deterministic: `uniqueString(resourceGroup().id)` is appended to `
 az group create -n comply-rg -l westeurope
 
 az deployment group create -g comply-rg -f infra/bicep/main.bicep \
-  -p authSecret="$COMPLY_AUTH_SECRET" \
-  -p postgresAdminPassword="$COMPLY_POSTGRES_PASSWORD"
+  -p authSecret="$COMPLY_AUTH_SECRET"
 ```
 
 All parameters with their defaults:
@@ -53,12 +51,11 @@ All parameters with their defaults:
 | Parameter | Default | Purpose |
 | --- | --- | --- |
 | `appName` | `comply` | Prefix for every resource name (3–11 characters) |
-| `location` | resource group location | Function App, storage account, PostgreSQL |
+| `location` | resource group location | Function App, storage account, Cosmos DB |
 | `publicUrl` | Static Web App URL | Public Angular origin: sign-in redirects and the CORS allowlist |
 | `apiUrl` | `https://<function-app>.azurewebsites.net` | Public API origin used for OIDC `redirect_uri` |
 | `authSecret` | — (required, secure) | HMAC key for sessions, magic links and OIDC state |
-| `postgresAdminLogin` | `complyadmin` | PostgreSQL administrator login |
-| `postgresAdminPassword` | — (required, secure) | PostgreSQL administrator password |
+| `cosmosDatabaseName` | `comply` | Cosmos DB database name |
 | `staticSiteLocation` | `westeurope` | Static Web App region |
 | `staticSiteSku` | `Free` | `Free` or `Standard` |
 | `oidcGoogleClientId` / `...Secret` | empty | Google sign-in |
@@ -75,7 +72,6 @@ A parameter file keeps the secrets out of your shell history:
   "contentVersion": "1.0.0.0",
   "parameters": {
     "authSecret": { "value": "<openssl rand -hex 32>" },
-    "postgresAdminPassword": { "value": "<strong password>" },
     "publicUrl": { "value": "https://comply.example.com" },
     "oidcMicrosoftClientId": { "value": "<client id>" },
     "oidcMicrosoftClientSecret": { "value": "<client secret>" },
@@ -89,9 +85,9 @@ az deployment group create -g comply-rg -f infra/bicep/main.bicep \
   -p @infra/bicep/env/prod.parameters.json
 ```
 
-Set `COMPLY_AUTH_SECRET` and `COMPLY_POSTGRES_PASSWORD` in the shell before the inline
-`-p` variant, or use the parameter file. Never commit a parameter file that contains them;
-`infra/bicep/env/` is for local, git-ignored files.
+Set `COMPLY_AUTH_SECRET` in the shell before the inline `-p` variant, or use the parameter
+file. Never commit a parameter file that contains it; `infra/bicep/env/` is for local,
+git-ignored files.
 
 The outputs are printed at the end of the deployment:
 
@@ -100,7 +96,7 @@ az deployment group show -g comply-rg -n main \
   --query properties.outputs -o json
 
 # functionAppName, functionUrl, apiUrl, staticSiteName, staticSiteUrl,
-# postgresHost, postgresDatabase, blobEndpoint, blobContainer
+# cosmosAccountName, cosmosEndpoint, cosmosDatabase, blobEndpoint, blobContainer
 ```
 
 ## Deploy the API
@@ -123,10 +119,11 @@ az functionapp deployment source config-zip -g comply-rg -n <function-app-name> 
 `func azure functionapp publish <function-app-name> --dotnet-isolated` from
 `apps/api-dotnet/src/Comply.Functions` works as well.
 
-Migrations run at worker startup because `COMPLY_DB_MIGRATE=1`. **The database must be
-reachable when the Function App starts.** If the firewall rule is missing, the server is still
-provisioning, or the password is wrong, startup fails and every request returns `503` until the
-app is restarted. Apply the firewall rule before the first deployment, and re-check the logs with
+The worker creates missing containers at startup unless `COMPLY_COSMOS_CREATE_CONTAINERS=0`.
+This template provisions the database and containers itself and sets the flag to `0`, so the
+first request does not depend on metadata write access. **Cosmos DB must be reachable when the
+Function App starts.** If the account is still provisioning or the connection string is wrong,
+startup fails and every request returns `503` until the app is restarted. Re-check the logs with
 `az webapp log tail -g comply-rg -n <function-app-name>` when `/healthz` does not answer.
 
 ## Deploy the Angular build
@@ -210,14 +207,13 @@ origin exactly.
 
 ## Notes and limits
 
-- The Functions host storage account is separate from PostgreSQL: the host needs it for its own
+- The Functions host storage account is separate from Cosmos DB: the host needs it for its own
   state even though every trigger is HTTP.
 - `COMPLY_DATA_DIR=/home/data` is per instance. Content comes from the packaged
   `COMPLY_SEED_DIR=/home/site/wwwroot/seed`. Anything that must survive a scale-out belongs in
-  PostgreSQL or the blob container.
+  Cosmos DB or the blob container.
 - The `comply` blob container is private (`publicAccess: None`). The .NET worker does not read
   the blob settings yet; they are set for parity with the Node deployment.
-- The PostgreSQL firewall rule allows Azure services only. To connect from a workstation, add
-  your own IP with `az postgres flexible-server firewall-rule create`.
-- Backups are retained for 7 days. Zone-redundant high availability is off to keep the B1ms
-  cost; enable it in the template for production criticality.
+- Cosmos DB serverless has no provisioned throughput and keeps continuous backups managed by
+  Azure. The account allows public network access; restrict it with `ipRules` or a private
+  endpoint if your policy requires it.

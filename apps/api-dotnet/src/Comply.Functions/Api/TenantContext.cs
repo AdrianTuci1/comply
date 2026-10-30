@@ -37,17 +37,17 @@ public sealed partial class TenantContext(
     UserDirectory users,
     McpKeyService keys,
     AuthSettings settings,
-    ComplyDatabase database)
+    IComplyStore comply)
 {
     private readonly AuthTokenService _tokens = tokens;
     private readonly UserDirectory _users = users;
     private readonly McpKeyService _keys = keys;
     private readonly AuthSettings _settings = settings;
-    private readonly ComplyDatabase _database = database;
+    private readonly IComplyStore _comply = comply;
 
     public async Task<TenantScope> ResolveAsync(HttpRequest request, CancellationToken cancellationToken = default)
     {
-        if (!_database.IsConfigured)
+        if (!_comply.IsConfigured)
         {
             throw new TenantException("The database is not configured for this deployment.", 503);
         }

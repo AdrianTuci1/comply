@@ -168,7 +168,7 @@ public sealed class AuthApiTests
         using var fixture = new AuthFixture();
         var withoutDatabase = new AuthApi(
             new AuthService(
-                new UserDirectory(new ComplyDatabase(null), fixture.Time),
+                new UserDirectory(new EfComplyStore(new ComplyDatabase(null)), fixture.Time),
                 fixture.Tokens,
                 new PasswordHasher(),
                 fixture.Time),

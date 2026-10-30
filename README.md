@@ -1,9 +1,11 @@
 # Comply
 
-Multi-tenant evidence portal for NIS2, ISO/IEC 27001, the EU AI Act, and SOC 2. The
-customer runs the agent inside their own infrastructure. Comply holds the content
-library, the assessment state machine, and the audit package. The product does not
-certify anything.
+**Audit evidence, kept in one board.**
+
+Comply is a self-hosted workspace for NIS2, ISO/IEC 27001, SOC 2, and EU AI Act evidence.
+Each requirement keeps its reference, owner, evidence, and conclusion.
+
+![The public Comply trust center: the organization header, NIS2, ISO 27001, SOC 2 and EU AI Act status, published controls with their evidence, and the subprocessor list.](apps/landing/assets/img/trust-page.jpg)
 
 ## What it does
 
@@ -18,14 +20,14 @@ certify anything.
   uploaded header image and an optional custom domain.
 - **Two deployment paths.** The self-hosted container serves the Angular interface, API, MCP
   endpoint, and trust page from one process. The split deployment runs the API and MCP on a
-  .NET Function App with PostgreSQL, and serves the Angular build from a CDN.
+  .NET Function App with Azure Cosmos DB, and serves the Angular build from a CDN.
 
 ## Under the hood
 
 - **Angular 22** standalone components, signals, and lazy routes for the portal and trust
   center.
-- **.NET 8 isolated Azure Functions** as the primary API host, with PostgreSQL for users,
-  assessments, evidence, and MCP keys.
+- **.NET 8 isolated Azure Functions** as the primary API host, with Azure Cosmos DB
+  (serverless, NoSQL) for users, assessments, evidence, and MCP keys.
 - **Node 24** host with no runtime npm dependencies, kept for self-hosted single-container
   installs; it serves the static build, `/api`, `/mcp`, and `/healthz` from one process.
 - **MCP Streamable HTTP** implemented directly over JSON-RPC 2.0, with tenant-bound keys.
@@ -142,17 +144,17 @@ unless `COMPLY_BLOB_*` points to Azure Blob Storage.
 ```
 apps/web/                Angular interface (sign-in, portal, workspace, trust center)
 apps/api-node/           Node host: self-hosted API, MCP, static build, ingest, auth
-apps/api-dotnet/         primary API: .NET 8 isolated Functions host on PostgreSQL
+apps/api-dotnet/         primary API: .NET 8 isolated Functions host on Cosmos DB
 apps/functions-node/     catch-all Node Azure Function used by the self-hosted path
 apps/landing/            static marketing site
 bin/comply.mjs           npx launcher for the container image
 easy-install.py          production installer, no repository checkout required
 deploy/                  Compose and init.sh for the no-clone Node install
-deploy/dotnet/           local split stack: PostgreSQL, Functions host, static Angular
+deploy/dotnet/           local split stack: Cosmos DB emulator, Functions host, static Angular
 content/                 versioned requirements per framework
 contracts/               JSON schemas for content
 tools/content-ingest/    local pipeline: document → draft → requirement → bundle
-infra/bicep/             Function App, PostgreSQL, Static Web App (split hosting)
+infra/bicep/             Function App, Cosmos DB, Static Web App (split hosting)
 data/                    runtime library, accounts, assessments, blobs (git ignored)
 docs/agents/             specifications for agents
 compose.yaml             one local Node container on port 8080
@@ -337,9 +339,10 @@ The primary deployment is split across three pieces:
 
 - **.NET 8 isolated Function App** (`apps/api-dotnet`) serves `/api/*`, `/mcp`, and
   `/healthz` on the Linux Consumption plan (`DOTNET-ISOLATED|8.0`).
-- **PostgreSQL Flexible Server 16** stores users, organizations, assessments, evidence, and MCP
-  keys. Migrations run when the worker starts, so the database must be reachable before the app
-  can serve traffic.
+- **Azure Cosmos DB for NoSQL, serverless** stores users, organizations, assessments,
+  evidence, and MCP keys. The worker creates the database and containers on first start when
+  `COMPLY_COSMOS_CREATE_CONTAINERS` is left at its default; the Bicep deployment provisions
+  them and sets the flag to `0`.
 - **Azure Static Web App** (or any CDN) hosts the Angular build only. It is not linked to the
   Function App: the bundle reads `apiBase` from `config.js` and calls the Function App
   cross-origin, with `COMPLY_APP_URL` as the CORS allowlist.
@@ -372,7 +375,7 @@ func azure functionapp publish <function-app-name>
 
 On the Node path the filesystem under `/home/data` is per instance, so a multi-instance
 deployment should move users, assessments, and MCP keys to Cosmos DB or Blob state. The .NET
-deployment avoids that by keeping the same records in PostgreSQL.
+deployment avoids that by keeping the same records in Cosmos DB.
 
 ## Content
 

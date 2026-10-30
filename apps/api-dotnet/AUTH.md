@@ -1,6 +1,7 @@
 # Authentication and persistence
 
-The Functions host stores users, assessments and findings in PostgreSQL through EF Core.
+The Functions host stores users, assessments and findings in Azure Cosmos DB for NoSQL through
+the `IComplyStore` abstraction.
 Accounts can sign in with a password, a magic link, or an external provider (Google, Microsoft
 Entra ID, GitHub, or any OpenID Connect provider). The Angular client keeps using its Bearer
 session token; an HttpOnly `comply_session` cookie is also accepted and set for same-origin
@@ -15,9 +16,10 @@ and static hosting stay on the Node backend.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `COMPLY_DB_CONNECTION` | unset | Npgsql connection string. Takes precedence over `ConnectionStrings:Comply`. |
-| `ConnectionStrings:Comply` | unset | Alternative connection string name, used when `COMPLY_DB_CONNECTION` is empty. |
-| `COMPLY_DB_MIGRATE` | `1` | Apply EF Core migrations at worker startup. `0` skips them (useful when a release pipeline migrates instead). |
+| `COMPLY_COSMOS_CONNECTION` | unset | Cosmos DB connection string. Without it, auth and agent routes return `503`. |
+| `COMPLY_COSMOS_DATABASE` | `comply` | Database name. |
+| `COMPLY_COSMOS_CREATE_CONTAINERS` | `1` | Create missing containers at worker startup. Set `0` when infrastructure provisions them. |
+| `COMPLY_COSMOS_EMULATOR` | detected for local endpoints | Accept the emulator's self-signed certificate. |
 | `COMPLY_AUTH_SECRET` | generated outside production | HMAC key for session, magic-link, OIDC code and OIDC state tokens. **Required in production**; startup fails without it. Generate with `openssl rand -hex 32`. |
 | `COMPLY_APP_URL` | `http://localhost:4200` | Angular app URL. Sign-in links and OIDC callbacks redirect to the first value. Comma-separated origins are all added to the production CORS allowlist. |
 | `COMPLY_CORS_ORIGINS` | unset | Extra origins (comma-separated) for the CORS allowlist, merged with `COMPLY_APP_URL`. Use it for a CDN-hosted Angular build. |
@@ -109,12 +111,12 @@ and its `instructions`. `tools/list` serves the embedded contract, `resources/li
 "Outside production" uses the same flag as `COMPLY_DEV_LINKS`: the request is a development
 request when `COMPLY_DEV_LINKS=1` or no environment variable marks production. Production is
 detected from `NODE_ENV`, `ASPNETCORE_ENVIRONMENT`, `AZURE_FUNCTIONS_ENVIRONMENT` or
-`COMPLY_ENV` equal to `production` (case-insensitive). If the database is not configured the
+`COMPLY_ENV` equal to `production` (case-insensitive). If Cosmos DB is not configured the
 agent routes return `503 {"error":"The database is not configured for this deployment."}`.
 
-The MCP key format is `sk_mcp_<tenant-slug>_<64 lowercase hex characters>`. `mcp_keys.key_hash`
-stores the SHA-256 of the full token and lookups use an equality match on the indexed column;
-`mcp_keys.key_prefix` keeps `sk_mcp_<slug>_<6 hex>` for display. Scopes (`read`,
+The MCP key format is `sk_mcp_<tenant-slug>_<64 lowercase hex characters>`. `mcp_keys.keyHash`
+stores the SHA-256 of the full token and lookups use an equality query on it;
+`mcp_keys.keyPrefix` keeps `sk_mcp_<slug>_<6 hex>` for display. Scopes (`read`,
 `evidence:write`, `admin`) are validated on creation, stored, and returned in `publicKey`, but —
 like the Node server — they are **not enforced per tool**: a valid key may call every tool for
 its own tenant. `last_used_at` is written at most once per minute. Revocation is idempotent and
@@ -186,61 +188,37 @@ Provider notes:
 
 ## Database
 
-Schema (`InitialSchema` migration) uses text ids, `text[]` for lists, and `timestamptz` for
-timestamps:
+Cosmos DB for NoSQL, using the serverless capacity mode in the Bicep template. Every aggregate is
+one document: an assessment embeds its requirements, evidence and events, so the agent's read and
+write path is one point read and one replace.
 
-| Table | Purpose |
-| --- | --- |
-| `organizations` | Tenant root, unique `slug`. |
-| `users` | Unique `email`, `organization_id`, `role`, nullable `password_hash`, `providers`, login timestamps. |
-| `external_logins` | Unique `(provider, subject)` linked to a user. |
-| `assessments` | Framework assessment header: scope, period, phase, revision, content status, review/export timestamps. |
-| `assessment_requirements` | Per-assessment requirement rows with status, conclusion and ordering. Unique `(assessment_id, library_requirement_id)`. |
-| `evidence` | Evidence attached to an assessment requirement, with `citation` and `hash` (nullable text). `created_at` carries the agent's `collectedAt`. |
-| `assessment_events` | Revision history for an assessment. |
-| `mcp_keys` | Hashed MCP credentials with prefix, scopes and last-used/revocation timestamps. |
+| Container | Partition key | Document id | Contents |
+| --- | --- | --- | --- |
+| `organizations` | `/id` | organization id | Tenant root, unique `slug`. |
+| `users` | `/id` | user id | `email`, `organizationId`, `role`, nullable `passwordHash`, `providers`, login timestamps. |
+| `email_locks` | `/id` | lowercased email | `userId`. Written before the user document so an email can only belong to one account. |
+| `external_logins` | `/id` | SHA-256 of `provider\nsubject` | `userId`, `provider`, `subject`. |
+| `assessments` | `/organizationId` | assessment id | Header plus embedded `requirements` (with `evidence`) and `events`. |
+| `mcp_keys` | `/organizationId` | key id | `keyHash`, `keyPrefix`, `scopes`, last-used and revocation timestamps. |
 
-Indexes cover tenant/framework/status lookups, assessment children, and unique identity columns
-(`users.email`, `organizations.slug`, `external_logins(provider, subject)`, `mcp_keys.key_hash`,
-`assessment_requirements(assessment_id, library_requirement_id)`).
+Documents are serialized with camelCase names; nulls and navigation properties are omitted.
+`DateOnly` values such as `periodFrom` are stored as `yyyy-MM-dd`, and timestamps as ISO-8601.
+An unknown document id is a `404` from Cosmos and is mapped to `null` by the store.
 
-The agent surface added the `AddEvidenceCitationAndHash` migration (nullable `evidence.citation`
-and `evidence.hash`) and the requirement unique index; the initial migration is unchanged.
+Email uniqueness uses the `email_locks` document: a conflicting `409` becomes
+`StoreConflictException`, and a failed user write deletes the lock so a retry can succeed.
+External logins use a deterministic document id, so linking the same provider subject twice is
+also a `409` conflict rather than a duplicate row.
 
-Migrations run at startup when `COMPLY_DB_MIGRATE` is not `0`. An unreachable database or a
-failed migration is a startup failure with a clear message (host and database name only — the
-connection string is never logged).
-
-### Migration commands
-
-With the .NET SDK installed:
-
-```bash
-cd apps/api-dotnet
-export COMPLY_DB_CONNECTION="Host=localhost;Database=comply;Username=comply;Password=comply"
-dotnet ef migrations add <Name> --project src/Comply.Functions --startup-project src/Comply.Functions --output-dir Data/Migrations
-dotnet ef database update --project src/Comply.Functions --startup-project src/Comply.Functions
-```
-
-This repository has no SDK on the host, so the SDK container is used instead:
-
-```bash
-cd apps/api-dotnet
-docker run --rm -v "$PWD/../..":/src -w /src/apps/api-dotnet/src/Comply.Functions \
-  mcr.microsoft.com/dotnet/sdk:8.0 bash -lc '
-    dotnet tool install --global dotnet-ef --version 8.0.11 >/dev/null
-    export PATH=$PATH:/root/.dotnet/tools
-    dotnet ef migrations add <Name> --output-dir Data/Migrations'
-```
-
-`DesignTimeComplyDbContextFactory` reads `COMPLY_DB_CONNECTION` and falls back to
-`Host=localhost;Database=comply;Username=comply;Password=comply`, so the tooling never needs the
-Functions host.
+At startup `CosmosComplyStore.CreateAsync` connects in gateway mode, optionally creates the
+database and containers, and logs the endpoint and database name — never the account key. An
+unreachable account is a startup failure with a clear message. The store uses the session
+consistency level configured on the account.
 
 ## Local Docker
 
-`deploy/dotnet/compose.yaml` runs PostgreSQL 16, Azurite (the Functions host needs a storage
-account), the Functions app and a static Angular host:
+`deploy/dotnet/compose.yaml` runs the Cosmos DB emulator, Azurite (the Functions host needs a
+storage account), the Functions app and a static Angular host:
 
 ```bash
 COMPLY_AUTH_SECRET=$(openssl rand -hex 32) docker compose -f deploy/dotnet/compose.yaml up --build
@@ -249,7 +227,7 @@ curl http://localhost:7071/api/auth/providers
 ```
 
 The app is published to `mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated8.0`
-and listens on `http://localhost:7071`. PostgreSQL keeps its data in the `postgres-data` volume;
+and listens on `http://localhost:7071`. Cosmos DB keeps its data in the `cosmos-data` volume;
 the repository `data/` directory is mounted at `/data`, writable because ingest updates
 `library.json`, and `apps/api-node/seed` is mounted read-only at `/seed` for the initial content.
 The compose file defaults to a development auth secret and must not be reused outside local
@@ -271,14 +249,17 @@ OIDC callback and magic-link redirects.
 ```bash
 cd apps/api-dotnet/src/Comply.Functions
 cp local.settings.json.example local.settings.json
-docker run -d --name comply-postgres -p 5432:5432 \
-  -e POSTGRES_DB=comply -e POSTGRES_USER=comply -e POSTGRES_PASSWORD=comply postgres:16
+docker run -d --name comply-cosmos -p 8081:8081 \
+  -e AZURE_COSMOS_EMULATOR_PARTITION_COUNT=6 \
+  mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
 func start
 ```
 
-`local.settings.json.example` points at `localhost:5432` with `COMPLY_DB_MIGRATE=1`. Core Tools
-also needs `AzureWebJobsStorage=UseDevelopmentStorage=true` with Azurite running, or a real
-storage connection string.
+`local.settings.json.example` points at the emulator on `localhost:8081` with container creation
+enabled. On Apple silicon add `--platform linux/amd64`; the emulator image is amd64 only and its
+first boot takes about a minute. Core Tools also needs
+`AzureWebJobsStorage=UseDevelopmentStorage=true` with Azurite running, or a real storage
+connection string.
 
 ### Agent and MCP walkthrough
 

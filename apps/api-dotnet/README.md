@@ -1,13 +1,13 @@
 # Comply.Functions (.NET)
 
 The Comply backend on Azure Functions: the content API served from the same
-`data/library.json` shape as the Node backend, accounts (PostgreSQL persistence,
+`data/library.json` shape as the Node backend, accounts (Azure Cosmos DB persistence,
 password/magic-link sessions and external sign-in), the agent surface — guided assessments,
 evidence, MCP keys and the `/mcp` JSON-RPC server — and the scheduled ingest pipeline. Library
 writes and static hosting stay on the Node backend; Angular is served from a CDN in production.
 
-See [AUTH.md](AUTH.md) for auth environment variables, provider callback URLs and migration
-commands, and [INGEST.md](INGEST.md) for the ingest pipeline.
+See [AUTH.md](AUTH.md) for auth environment variables, provider callback URLs and database
+setup, and [INGEST.md](INGEST.md) for the ingest pipeline.
 
 Target framework: **.NET 8 (LTS)** with the **isolated worker** model and ASP.NET Core
 integration (`ConfigureFunctionsWebApplication`). The current Functions worker packages
@@ -27,18 +27,18 @@ apps/api-dotnet/
 ├── README.md
 ├── src/Comply.Functions/
 │   ├── Comply.Functions.csproj
-│   ├── Program.cs                        host + DI, startup migrations
+│   ├── Program.cs                        host + DI, Cosmos store startup
 │   ├── host.json                         host config, routePrefix = ""
 │   ├── local.settings.json.example
 │   ├── Agent/                            AgentService (15 tools), models, tool catalog, search
 │   ├── Api/                              Content/Auth/Agent routers, tenant resolution, CORS
 │   ├── Auth/                             tokens, passwords, auth service, OIDC providers
-│   ├── Data/                             ComplyDbContext, entities, migrations, user directory
+│   ├── Data/                             Cosmos store, settings, entities, user directory
 │   ├── Json/JsonDefaults.cs              camelCase + relaxed UTF-8 escaping
 │   ├── Models/                           library, requirement, source, document, responses
 │   ├── Services/                         LibraryStore, LibraryQuery, MCP keys, framework catalog
 │   └── Triggers/ContentFunctions.cs      catch-all HTTP trigger ({*path})
-└── tests/Comply.Functions.Tests/         xUnit tests (no Azure or PostgreSQL required)
+└── tests/Comply.Functions.Tests/         xUnit tests (no Azure or Cosmos DB required)
 ```
 
 One `{*path}` HTTP trigger routes every request through `ContentApi`, which delegates
@@ -60,17 +60,21 @@ cp local.settings.json.example local.settings.json
 func start                      # builds the project, serves on http://localhost:7071
 ```
 
-`local.settings.json.example` enables auth against a local PostgreSQL instance
-(`COMPLY_DB_CONNECTION=Host=localhost;Database=comply;Username=comply;Password=comply`) and runs
-migrations at startup. Start the database first:
+`local.settings.json.example` enables auth against the Cosmos DB emulator
+(`COMPLY_COSMOS_CONNECTION=AccountEndpoint=https://localhost:8081/;...`) and creates the
+database and containers at startup. Start the emulator first:
 
 ```bash
-docker run -d --name comply-postgres -p 5432:5432 \
-  -e POSTGRES_DB=comply -e POSTGRES_USER=comply -e POSTGRES_PASSWORD=comply postgres:16
+docker run -d --name comply-cosmos -p 8081:8081 \
+  -e AZURE_COSMOS_EMULATOR_PARTITION_COUNT=6 \
+  mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
 ```
 
-To serve only the content API without a database, remove `COMPLY_DB_CONNECTION` (or set
-`COMPLY_DB_MIGRATE=0` and expect `503` from `/api/auth/*`).
+Apple silicon needs `--platform linux/amd64`; the emulator is published for amd64 only and the
+first boot takes about a minute.
+
+To serve only the content API without a database, remove `COMPLY_COSMOS_CONNECTION` and expect
+`503` from `/api/auth/*`.
 
 `local.settings.json.example` points `COMPLY_DATA_DIR` at `../../../../data` (the repository
 `data/` directory). To use another directory, set an absolute path:
@@ -90,7 +94,7 @@ curl http://localhost:7071/api/documents/doc-nis2-2022-2555
 curl http://localhost:7071/api/auth/providers
 ```
 
-For the full stack (PostgreSQL, Azurite, the Functions app and a static Angular host) use
+For the full stack (Cosmos DB emulator, Azurite, the Functions app and a static Angular host) use
 `docker compose -f deploy/dotnet/compose.yaml up --build` from the repository root; see
 [deploy/dotnet/README.md](../../deploy/dotnet/README.md).
 
@@ -107,7 +111,8 @@ docker run --rm -p 7071:80 \
   -e FUNCTIONS_WORKER_RUNTIME=dotnet-isolated \
   -e COMPLY_DATA_DIR=/data \
   -e COMPLY_PUBLIC_URL=http://localhost:7071 \
-  -e COMPLY_DB_CONNECTION="Host=host.docker.internal;Database=comply;Username=comply;Password=comply" \
+  -e COMPLY_COSMOS_CONNECTION="AccountEndpoint=https://host.docker.internal:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==" \
+  -e COMPLY_COSMOS_EMULATOR=1 \
   -e COMPLY_AUTH_SECRET=local-development-secret \
   -v "$PWD/src/Comply.Functions/bin/Release/net8.0/publish:/home/site/wwwroot" \
   -v "$PWD/../../data:/data:ro" \
@@ -123,8 +128,10 @@ docker run --rm -p 7071:80 \
 | `COMPLY_PUBLIC_URL` | request scheme + host | `publicUrl` in `GET /api/runtime`, OIDC `redirect_uri` base |
 | `COMPLY_DEPLOYMENT_MODE` | `self_hosted` when `COMPLY_TRUST_HOST` is set, else `managed` | `deployment` in `GET /api/runtime` |
 | `COMPLY_TRUST_HOST`, `COMPLY_TRUST_SLUG` | unset | `trust` block in `GET /api/runtime` |
-| `COMPLY_DB_CONNECTION` | unset | PostgreSQL connection string (`ConnectionStrings:Comply` is the fallback) |
-| `COMPLY_DB_MIGRATE` | `1` | Apply EF Core migrations at startup |
+| `COMPLY_COSMOS_CONNECTION` | unset | Cosmos DB connection string. Without it auth, agent and MCP-key routes return `503` |
+| `COMPLY_COSMOS_DATABASE` | `comply` | Cosmos DB database name |
+| `COMPLY_COSMOS_CREATE_CONTAINERS` | `1` | Create missing containers at startup; set `0` when infrastructure owns them |
+| `COMPLY_COSMOS_EMULATOR` | detected for local endpoints | Accept the emulator's self-signed certificate |
 | `COMPLY_AUTH_SECRET` | generated outside production | HMAC secret for session, magic-link and OIDC tokens; required in production |
 | `COMPLY_APP_URL` | `http://localhost:4200` | Angular app URL for sign-in redirects and the production CORS allowlist. May hold a comma-separated origin list; the first value is the redirect target. |
 | `COMPLY_CORS_ORIGINS` | unset | Extra CORS origins (comma-separated), added to the `COMPLY_APP_URL` list. Use it for a CDN-hosted Angular build. |
@@ -144,7 +151,8 @@ restart.
 
 ## Agent, MCP keys and MCP server
 
-`AgentService` is a port of `apps/api-node/lib/agent.mjs` over EF Core and the library store.
+`AgentService` is a port of `apps/api-node/lib/agent.mjs` over the `IComplyStore` abstraction
+(Cosmos DB in production, an EF Core in-memory adapter in tests) and the library store.
 It keeps the Node response shapes, phases (`scope`, `collect`, `review`, `export`, `complete`),
 requirement statuses, revision/event recording, `next_actions`, `language_policy`, pagination
 (default 25, cap 100) and the search ranking (same tokenizer, plural stemming, IDF weights and
@@ -269,7 +277,7 @@ were not part of that side-by-side JSON diff.
 | `GET /api/documents/{id}` | yes | yes | `404 {"error":"Document not found."}` |
 | `OPTIONS *` | yes | yes | `204` plus the CORS headers; production uses an allowlist, not `*` |
 | `POST /api/library/sources`, requirement/source review writes | yes | no | `501` |
-| `/api/auth/register`, `/login`, `/magic-link`, `/verify`, `/exchange`, `/me`, `/sign-out`, `/providers` | yes | yes | Same bodies; sessions are PostgreSQL-backed and externally issued codes are one-time |
+| `/api/auth/register`, `/login`, `/magic-link`, `/verify`, `/exchange`, `/me`, `/sign-out`, `/providers` | yes | yes | Same bodies; sessions are Cosmos DB-backed and externally issued codes are one-time |
 | `/api/auth/oidc/{provider}/{start,callback}` | yes | yes | Google, Microsoft Entra, GitHub and generic OIDC; callback redirects to the app |
 | `/mcp` (JSON-RPC, tools, resources) | yes | yes | `initialize`, `ping`, `tools/list`, `tools/call`, `resources/list`, `prompts/list`; `notifications/*` = `204` |
 | `/api/agent/*` (assessments, boards) | yes | yes | Same summaries/detail shapes; optional `page`/`pageSize` paging is a .NET addition |
@@ -301,7 +309,7 @@ Deliberate deviations from the Node behaviour:
   Status code and tenant rules are identical.
 - **Auth responses keep the Node shapes** (`{session, expiresAt, user}`, `{user}`,
   `{password, providers, demo, setupRequired}`, `{sent, email, expiresAt, devToken?}`), but the
-  account store is PostgreSQL: passwords use PBKDF2 (Node scrypt hashes must be reset), users are
+  account store is Cosmos DB: passwords use PBKDF2 (Node scrypt hashes must be reset), users are
   unique by email, and `providers` lists every linked method. External sign-in merges accounts by
   verified email instead of creating a second user.
 - **OIDC callback failures redirect with `?error=`** exactly like Node; provider error messages
@@ -325,7 +333,7 @@ cd apps/api-dotnet
 dotnet test
 ```
 
-409 xUnit tests, no Azure services, Functions host or PostgreSQL required. The original 166
+385 xUnit tests, no Azure services, Functions host or Cosmos DB required. The original 166
 (phase 1) still pass unchanged. The additions cover:
 
 - **Agent domain** (`AgentServiceTests`, `AgentSearchTests`): start/scope/brief/list/search/
@@ -345,12 +353,14 @@ dotnet test
   `initialize`/`tools/list`/`resources/list`/`prompts/list`, and the embedded contract.
 - **CORS** (`CorsTests`): preflight from allowed and unknown origins, comma-separated lists,
   `Vary: origin`, error responses, and `OPTIONS` `204`.
-- **EF model** (`DatabaseMappingTests`): snake_case names, new `evidence` columns, the
-  `(assessment_id, library_requirement_id)` unique index and the compiled migration.
+- **Cosmos documents** (`CosmosDocumentTests`): camelCase field names, the top-level `id`,
+  ignored navigation properties, omitted nulls, embedded requirements/evidence/events,
+  `DateOnly` round-trips, and connection-string parsing (database default, emulator detection,
+  container creation, endpoint logging without the key).
 
-Auth logic runs against EF Core InMemory; the model assertions use the Npgsql provider without
-opening a connection. A live PostgreSQL integration test is not part of `dotnet test`; the compose
-stack is the manual end-to-end check.
+The services and HTTP tests run against an EF Core InMemory adapter (`EfComplyStore`) that
+implements the same `IComplyStore` contract as the Cosmos store. A live Cosmos DB integration
+test is not part of `dotnet test`; the compose stack is the manual end-to-end check.
 
 The build copies `apps/api-node/seed/**` into `bin/` and `publish/` as `seed/`, so a fresh
 Function App can answer requests before `data/` exists. `COMPLY_SEED_DIR` can point elsewhere if
@@ -369,26 +379,26 @@ docker run --rm -v "$PWD":/src -w /src/apps/api-dotnet \
 
 Run both from the repository root so the seed content under `apps/api-node/seed` is visible to
 the build. Result: `Build succeeded. 0 Warning(s) 0 Error(s)` and `Passed! - Failed: 0, Passed:
-413, Skipped: 0, Total: 413`. `dotnet publish -c Release` produces `host.json`,
+385, Skipped: 0, Total: 385`. `dotnet publish -c Release` produces `host.json`,
 `functions.metadata` (single `content` function, route `{*path}`) and the packaged `seed/`
 directory.
 
-The compose stack was also started end to end: migrations created the tables, registration
-returned `201`, an MCP `start_assessment` call created an assessment, evidence was submitted and
-completed, review and export returned the package with the manifest digest, an MCP key was
-created, listed and revoked, a conflicting `x-comply-tenant` header returned `403`, and a CORS
-preflight from a CDN-style origin returned the allow headers. The exact commands are in
-[AUTH.md](AUTH.md#agent-and-mcp-walkthrough).
+The compose stack was also started end to end: the worker created the Cosmos database and
+containers, registration returned `201`, an MCP `start_assessment` call created an assessment,
+evidence was submitted and completed, review and export returned the package with the manifest
+digest, an MCP key was created, listed and revoked, a conflicting `x-comply-tenant` header
+returned `403`, and a CORS preflight from a CDN-style origin returned the allow headers. The
+exact commands are in [AUTH.md](AUTH.md#agent-and-mcp-walkthrough).
 
 ## Deployment notes
 
 1. Create a Linux Function App on the **.NET 8 isolated** runtime
    (`FUNCTIONS_WORKER_RUNTIME=dotnet-isolated`). `infra/bicep/main.bicep` provisions this app,
-   PostgreSQL Flexible Server and the Static Web App; see
+   the serverless Cosmos DB account and the Static Web App; see
    [infra/bicep/README.md](../../infra/bicep/README.md).
-2. Provision PostgreSQL (Flexible Server is the natural fit), set `COMPLY_DB_CONNECTION`, and let
-   the worker apply migrations on boot (`COMPLY_DB_MIGRATE=1`). Set `COMPLY_AUTH_SECRET`; startup
-   fails if it is missing in production.
+2. Set `COMPLY_COSMOS_CONNECTION` to the account connection string (or let the template do it)
+   and `COMPLY_AUTH_SECRET`; startup fails if the secret is missing in production. Containers
+   are created on first boot unless `COMPLY_COSMOS_CREATE_CONTAINERS=0`.
 3. Publish and deploy. Let Core Tools build and publish from the project directory:
 
    ```bash
@@ -411,7 +421,7 @@ preflight from a CDN-style origin returned the allow headers. The exact commands
    (`cp -r seed/. /home/data/`). The app already falls back to the packaged `seed/`, so this is
    only needed so ingest or later writes see the same content.
 6. `/home/data` is per instance. Anything that must be consistent across instances belongs in
-   Blob Storage or a database, the same caveat as the Node deployment.
+   Cosmos DB or Blob Storage, the same caveat as the Node deployment.
 7. Keep the Angular build on App Service or Azure Static Web Apps. If you later put a CDN or
    Front Door in front, route `/api/*` and `/healthz` to this Function App.
 

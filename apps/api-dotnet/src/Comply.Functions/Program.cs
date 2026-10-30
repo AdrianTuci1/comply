@@ -4,7 +4,6 @@ using Comply.Functions.Auth;
 using Comply.Functions.Data;
 using Comply.Functions.Ingest;
 using Comply.Functions.Services;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -14,8 +13,19 @@ var startupLogger = startupLoggerFactory.CreateLogger("Comply.Functions.Startup"
 
 // A missing secret is fatal in production; elsewhere an ephemeral one is generated.
 var authSettings = AuthSettings.FromEnvironment(startupLogger);
-var databaseSettings = DatabaseSettings.FromEnvironment();
+var cosmosSettings = CosmosSettings.FromEnvironment();
 var corsSettings = CorsSettings.FromEnvironment();
+
+// Containers are created before the host serves requests so the first login cannot race setup.
+IComplyStore complyStore = cosmosSettings.IsConfigured
+    ? await CosmosComplyStore.CreateAsync(cosmosSettings, startupLogger)
+    : new UnconfiguredComplyStore();
+if (!cosmosSettings.IsConfigured)
+{
+    startupLogger.LogWarning(
+        "{Variable} is not set; persistence and /api/auth endpoints are disabled.",
+        CosmosSettings.ConnectionVariable);
+}
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
@@ -24,21 +34,12 @@ var host = new HostBuilder()
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton(DeploymentSettings.FromEnvironment());
         services.AddSingleton(authSettings);
+        services.AddSingleton(cosmosSettings);
         services.AddSingleton(corsSettings);
-        services.AddSingleton(databaseSettings);
+        services.AddSingleton(complyStore);
         services.AddSingleton(new HttpClient { Timeout = TimeSpan.FromSeconds(20) });
         services.AddSingleton(_ => LibraryStore.CreateDefault());
 
-        if (databaseSettings.IsConfigured)
-        {
-            services.AddDbContextFactory<ComplyDbContext>(options =>
-                options.UseNpgsql(
-                    databaseSettings.ConnectionString,
-                    npgsql => npgsql.MigrationsAssembly(typeof(ComplyDbContext).Assembly.FullName)));
-        }
-
-        services.AddSingleton(provider => new ComplyDatabase(
-            provider.GetService<IDbContextFactory<ComplyDbContext>>()));
         services.AddSingleton<PasswordHasher>();
         services.AddSingleton(provider => new AuthTokenService(
             authSettings.Secret,
@@ -66,7 +67,5 @@ var host = new HostBuilder()
         services.AddSingleton<ContentApi>();
     })
     .Build();
-
-await DatabaseStartup.InitializeAsync(host.Services, databaseSettings, startupLogger);
 
 await host.RunAsync();

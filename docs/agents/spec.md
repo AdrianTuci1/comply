@@ -158,7 +158,7 @@ Schemele complete, cheile de partiție și regulile de criptare sunt în `data-m
 
 Angular, .NET 10 (ASP.NET Core cu adaptor Azure Functions), Azure Functions Flex Consumption, Cosmos DB serverless, Blob Storage, Key Vault, Entra ID, CDN.
 
-Portabilitate: aplicația ca container ASP.NET Core, interfață de repository cu implementări Cosmos și Postgres, OIDC, S3-compatible.
+Portabilitate: aplicația ca container ASP.NET Core, interfață de repository cu implementare Cosmos DB (NoSQL, serverless), OIDC, S3-compatible.
 
 ## Non-obiective v1
 

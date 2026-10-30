@@ -45,15 +45,16 @@ internal sealed class AgentFixture : IDisposable
 
         Factory = new PooledDbContextFactory<ComplyDbContext>(options);
         Database = new ComplyDatabase(Factory);
+        ComplyStore = new EfComplyStore(Database);
         Tokens = new AuthTokenService(Settings.Secret, Time);
-        Users = new UserDirectory(Database, Time);
+        Users = new UserDirectory(ComplyStore, Time);
         Auth = new AuthService(Users, Tokens, new PasswordHasher(), Time);
 
         _workspace.WriteLibrary(_workspace.DataDirectory, Library());
         Store = new LibraryStore(_workspace.DataDirectory, _workspace.SeedDirectory);
-        Agent = new AgentService(Database, Store, Time, NextId);
-        Keys = new McpKeyService(Database, Time, NextSecret);
-        Tenant = new TenantContext(Tokens, Users, Keys, Settings, Database);
+        Agent = new AgentService(ComplyStore, Store, Time, NextId);
+        Keys = new McpKeyService(ComplyStore, Time, NextSecret);
+        Tenant = new TenantContext(Tokens, Users, Keys, Settings, ComplyStore);
         McpApi = new AgentApi(Agent, Keys, Tenant);
         Api = new ContentApi(
             Store,
@@ -67,6 +68,7 @@ internal sealed class AgentFixture : IDisposable
     public AuthSettings Settings { get; }
     public PooledDbContextFactory<ComplyDbContext> Factory { get; }
     public ComplyDatabase Database { get; }
+    public EfComplyStore ComplyStore { get; }
     public AuthTokenService Tokens { get; }
     public UserDirectory Users { get; }
     public AuthService Auth { get; }

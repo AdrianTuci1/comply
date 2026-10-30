@@ -1,29 +1,34 @@
-# Split local stack: PostgreSQL + Azurite + the .NET 8 Functions host (API/MCP) + a static
-# nginx container for the Angular build. The Angular container never proxies /api: the bundle
-# reads apiBase from config.js, exactly like the CDN/Static Web App deployment.
+# Split local stack: Cosmos DB emulator + Azurite + the .NET 8 Functions host (API/MCP) + a
+# static nginx container for the Angular build. The Angular container never proxies /api: the
+# bundle reads apiBase from config.js, exactly like the CDN/Static Web App deployment.
 #
 #   docker compose -f deploy/dotnet/compose.yaml up --build
 #   open http://localhost:8080     (Angular)
 #   curl http://localhost:7071/healthz
 #
 # Values come from deploy/dotnet/.env when present (see .env.example); the defaults below are
-# development-only.
+# development-only. Set COMPLY_COSMOS_CONNECTION to use a real Cosmos DB account instead of the
+# emulator; the emulator container then stays idle.
 name: comply-dotnet
 
 services:
-  postgres:
-    image: postgres:16
+  # linux/amd64 only, like the Functions base image, so both run under emulation on Apple silicon.
+  # The well-known emulator key is public; it never opens a production account.
+  cosmos:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+    platform: linux/amd64
     environment:
-      POSTGRES_DB: comply
-      POSTGRES_USER: comply
-      POSTGRES_PASSWORD: comply
+      AZURE_COSMOS_EMULATOR_PARTITION_COUNT: "6"
+      AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: "true"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - cosmos-data:/tmp/cosmos/appdata
+    ports:
+      - "8081:8081"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U comply -d comply"]
-      interval: 5s
+      test: ["CMD", "curl", "-fk", "https://localhost:8081"]
+      interval: 10s
       timeout: 5s
-      retries: 20
+      retries: 60
 
   # The Functions host needs a storage account even when every trigger is HTTP.
   # UseDevelopmentStorage points at localhost, so the connection string targets this service.
@@ -41,7 +46,7 @@ services:
     # mcr.microsoft.com/azure-functions only publishes linux/amd64 images.
     platform: linux/amd64
     depends_on:
-      postgres:
+      cosmos:
         condition: service_healthy
       azurite:
         condition: service_started
@@ -49,8 +54,10 @@ services:
       FUNCTIONS_WORKER_RUNTIME: dotnet-isolated
       AzureWebJobsStorage: >-
         DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
-      COMPLY_DB_CONNECTION: Host=postgres;Port=5432;Database=comply;Username=comply;Password=comply
-      COMPLY_DB_MIGRATE: "1"
+      COMPLY_COSMOS_CONNECTION: ${COMPLY_COSMOS_CONNECTION:-AccountEndpoint=https://cosmos:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==}
+      COMPLY_COSMOS_DATABASE: ${COMPLY_COSMOS_DATABASE:-comply}
+      COMPLY_COSMOS_CREATE_CONTAINERS: "1"
+      COMPLY_COSMOS_EMULATOR: "1"
       COMPLY_AUTH_SECRET: ${COMPLY_AUTH_SECRET:-local-development-secret-change-before-production}
       COMPLY_APP_URL: http://localhost:${WEB_PORT:-8080}
       COMPLY_PUBLIC_URL: http://localhost:7071
@@ -95,5 +102,5 @@ services:
       - "${WEB_PORT:-8080}:80"
 
 volumes:
-  postgres-data:
+  cosmos-data:
   azurite-data:

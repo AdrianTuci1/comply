@@ -1,11 +1,11 @@
-# Local split stack (.NET API + PostgreSQL + static Angular)
+# Local split stack (.NET API + Cosmos DB + static Angular)
 
 This stack runs the production split-hosting model on one machine:
 
 | Container | Image | Serves |
 | --- | --- | --- |
 | `functions` | `apps/api-dotnet/Dockerfile` | API, MCP, `/healthz` on `:7071` |
-| `postgres` | `postgres:16` | users, assessments, evidence, MCP keys |
+| `cosmos` | `mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator` | users, assessments, evidence, MCP keys |
 | `azurite` | `mcr.microsoft.com/azure-storage/azurite` | Functions host storage (private network only) |
 | `web` | `deploy/dotnet/web.Dockerfile` | the Angular build on `:8080`, no `/api` proxy |
 
@@ -16,7 +16,7 @@ test of CORS, OIDC redirects and deep links.
 
 ```
 deploy/dotnet/
-├── compose.yaml                    PostgreSQL + Azurite + Functions + Angular
+├── compose.yaml                    Cosmos DB emulator + Azurite + Functions + Angular
 ├── web.Dockerfile                  multi-stage node build → nginx
 ├── nginx.conf                      SPA fallback, config.js no-cache, immutable assets
 ├── nginx-headers.conf              security headers shared by every location
@@ -38,7 +38,8 @@ docker compose -f deploy/dotnet/compose.yaml up --build
 - Angular: <http://localhost:8080>
 - API: <http://localhost:7071>
 - MCP: `http://localhost:7071/mcp`
-- PostgreSQL: reachable only from the compose network (add `ports:` if you need `psql`)
+- Cosmos DB emulator: <https://localhost:8081/_explorer/index.html> (self-signed certificate; the
+  worker skips validation for local endpoints)
 
 The first request to the Angular app is `/sign-in`; a fresh database has no accounts, so the
 page offers the setup form. The API equivalent:
@@ -59,14 +60,15 @@ curl -fsS http://localhost:8080/config.js
 curl -fsS http://localhost:8080/workspace/boards | head -c 200   # index.html via SPA fallback
 ```
 
-Stop and remove the volumes (database and Azurite state):
+Stop and remove the volumes (Cosmos emulator and Azurite state):
 
 ```bash
 docker compose -f deploy/dotnet/compose.yaml down -v
 ```
 
-The Functions runtime image is `linux/amd64` only, so `compose.yaml` pins
-`platform: linux/amd64`; on Apple silicon it runs under emulation and the first build is slow.
+The Functions runtime image and the Cosmos DB emulator are `linux/amd64` only, so
+`compose.yaml` pins `platform: linux/amd64`; on Apple silicon they run under emulation and the
+first build is slow.
 The repository `data/` directory is mounted at `/data` and supplies `library.json` and
 captured documents; the mount is writable because ingest updates the library.
 `COMPLY_SEED_DIR` points at the read-only seed mount from `apps/api-node/seed`.
@@ -84,8 +86,10 @@ the OIDC credentials.
 | `COMPLY_APP_URL` | `http://localhost:${WEB_PORT}` | Angular origin: sign-in redirects and CORS allowlist |
 | `COMPLY_PUBLIC_URL` | `http://localhost:7071` | API origin used to build OIDC `redirect_uri` values |
 | `COMPLY_CORS_ORIGINS` | `http://localhost:${WEB_PORT}` | Explicit CORS allowlist, merged with `COMPLY_APP_URL` |
-| `COMPLY_DB_CONNECTION` | `Host=postgres;...` | Npgsql connection string |
-| `COMPLY_DB_MIGRATE` | `1` | Apply EF Core migrations at worker startup |
+| `COMPLY_COSMOS_CONNECTION` | emulator connection string | Cosmos DB connection string; set it in `.env` to use a real account |
+| `COMPLY_COSMOS_DATABASE` | `comply` | Database name |
+| `COMPLY_COSMOS_CREATE_CONTAINERS` | `1` | Create missing containers at worker startup |
+| `COMPLY_COSMOS_EMULATOR` | `1` | Accept the emulator's self-signed certificate; detected automatically for local endpoints |
 | `COMPLY_DEV_LINKS` | `1` | Return `devToken` from magic-link instead of sending email |
 | `COMPLY_DATA_DIR` | `/data` (read-write mount) | Content library and documents; ingest writes here |
 | `COMPLY_SEED_DIR` | `/seed` | Read-only seed mount from `apps/api-node/seed` |
@@ -95,10 +99,11 @@ the OIDC credentials.
 `COMPLY_BLOB_CONNECTION_STRING` and `COMPLY_BLOB_CONTAINER` point at Azurite for parity with the
 Azure app settings; the .NET worker does not read them yet.
 
-Migrations run at startup. If PostgreSQL is not reachable the worker exits; the compose health
-check and `depends_on: service_healthy` normally prevent that. Use
-`docker compose -f deploy/dotnet/compose.yaml logs functions` for startup errors — the log line
-contains the host and database name, never the password.
+The worker creates the `comply` database and its containers on first start when they are
+missing. If Cosmos DB is not reachable the worker exits; the compose health check and
+`depends_on: service_healthy` normally prevent that. The emulator takes a minute to become
+ready on the first boot. Use `docker compose -f deploy/dotnet/compose.yaml logs functions` for
+startup errors — the log line contains the endpoint and database name, never the account key.
 
 ## OIDC callback URLs
 
@@ -134,7 +139,7 @@ locally, the Static Web App origin in Azure).
 
 ## Azure
 
-`infra/bicep/main.bicep` creates the Function App, PostgreSQL Flexible Server, storage account
+`infra/bicep/main.bicep` creates the Function App, Cosmos DB account, storage account
 and Static Web App. See [../../infra/bicep/README.md](../../infra/bicep/README.md) for parameters,
 deployment commands and post-deploy steps. The optional deploy job in
 `.github/workflows/dotnet.yml` performs the same publish and upload from CI.

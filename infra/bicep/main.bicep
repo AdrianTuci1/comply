@@ -1,16 +1,16 @@
 targetScope = 'resourceGroup'
 
-// Split hosting: the .NET 8 isolated Functions app serves /api, /mcp and /healthz, PostgreSQL
-// Flexible Server holds users, assessments, evidence and MCP keys, and the Angular build is
-// uploaded to an independent Azure Static Web App. The Static Web App never proxies /api, so
-// the browser calls the Function App cross-origin; COMPLY_APP_URL is the CORS allowlist.
+// Split hosting: the .NET 8 isolated Functions app serves /api, /mcp and /healthz, Azure Cosmos DB
+// (serverless) holds users, assessments, evidence and MCP keys, and the Angular build is uploaded
+// to an independent Azure Static Web App. The Static Web App never proxies /api, so the browser
+// calls the Function App cross-origin; COMPLY_APP_URL is the CORS allowlist.
 
 @description('Prefix for every resource name. Keep it short and lowercase.')
 @minLength(3)
 @maxLength(11)
 param appName string = 'comply'
 
-@description('Azure region for the Function App, storage account and PostgreSQL server.')
+@description('Azure region for the Function App, storage account and Cosmos DB account.')
 param location string = resourceGroup().location
 
 @description('Public origin of the Angular build (the CDN or Static Web App URL). Leave empty to use the Static Web App hostname created here.')
@@ -23,14 +23,10 @@ param apiUrl string = ''
 @secure()
 param authSecret string
 
-@description('PostgreSQL administrator login. Avoid reserved names such as admin, administrator or root.')
+@description('Cosmos DB database name. The app and every container use this value.')
 @minLength(1)
-param postgresAdminLogin string = 'complyadmin'
-
-@description('PostgreSQL administrator password. At least 8 characters, with three of: uppercase, lowercase, digits, symbols.')
-@secure()
-@minLength(8)
-param postgresAdminPassword string
+@maxLength(255)
+param cosmosDatabaseName string = 'comply'
 
 @description('Azure Static Web App region. The Free SKU is only offered in a few regions (westeurope, eastus2, westus2, centralus, eastasia).')
 param staticSiteLocation string = 'westeurope'
@@ -63,18 +59,22 @@ var storageName = toLower('${appName}${suffix}')
 var planName = '${appName}-plan'
 var functionName = '${appName}-${suffix}'
 var staticSiteName = '${appName}-web-${suffix}'
-var postgresName = '${appName}-pg-${suffix}'
+var cosmosName = toLower('${appName}-${suffix}')
 var containerName = 'comply'
-var databaseName = 'comply'
+// Containers use the same names and partition keys as CosmosComplyStore.
+var cosmosContainers = [
+  { name: 'organizations', partitionKey: '/id' }
+  { name: 'users', partitionKey: '/id' }
+  { name: 'email_locks', partitionKey: '/id' }
+  { name: 'external_logins', partitionKey: '/id' }
+  { name: 'assessments', partitionKey: '/organizationId' }
+  { name: 'mcp_keys', partitionKey: '/organizationId' }
+]
 // Computed instead of read from the site resource: app settings inside `site` cannot reference
 // the resource they belong to.
 var defaultFunctionUrl = 'https://${functionName}.azurewebsites.net'
 
 var storageConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
-
-// Npgsql accepts SSL Mode=Require against Flexible Server; the server certificate is not in the
-// public trust store for the *.postgres.database.azure.com endpoint, so trust it explicitly.
-var postgresConnectionString = 'Host=${postgres.properties.fullyQualifiedDomainName};Port=5432;Database=${databaseName};Username=${postgresAdminLogin};Password=${postgresAdminPassword};SSL Mode=Require;Trust Server Certificate=true'
 
 resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: storageName
@@ -110,42 +110,43 @@ resource plan 'Microsoft.Web/serverfarms@2023-12-01' = {
   properties: { reserved: true }
 }
 
-resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
-  name: postgresName
+// Serverless Cosmos DB: no provisioned throughput, billed per request. The connection string is
+// read with listConnectionStrings so rotating keys in the portal does not change this template.
+resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
+  name: cosmosName
   location: location
-  sku: { name: 'Standard_B1ms', tier: 'Burstable' }
+  kind: 'GlobalDocumentDB'
   properties: {
-    version: '16'
-    administratorLogin: postgresAdminLogin
-    administratorLoginPassword: postgresAdminPassword
-    storage: { storageSizeGB: 32 }
-    backup: {
-      backupRetentionDays: 7
-      geoRedundantBackup: 'Disabled'
+    databaseAccountOfferType: 'Standard'
+    locations: [{ locationName: location, failoverPriority: 0 }]
+    capabilities: [{ name: 'EnableServerless' }]
+    consistencyPolicy: { defaultConsistencyLevel: 'Session' }
+    minimalTlsVersion: 'Tls12'
+  }
+}
+
+resource cosmosDatabase 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-05-15' = {
+  parent: cosmos
+  name: cosmosDatabaseName
+  properties: {
+    resource: { id: cosmosDatabaseName }
+  }
+}
+
+resource cosmosContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = [
+  for container in cosmosContainers: {
+    parent: cosmosDatabase
+    name: container.name
+    properties: {
+      resource: {
+        id: container.name
+        partitionKey: { paths: [container.partitionKey], kind: 'Hash' }
+      }
     }
-    highAvailability: { mode: 'Disabled' }
   }
-}
+]
 
-resource postgresDatabase 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-01' = {
-  parent: postgres
-  name: databaseName
-  properties: {
-    charset: 'UTF8'
-    collation: 'en_US.utf8'
-  }
-}
-
-// 0.0.0.0-0.0.0.0 is the Azure services rule. The Function App has no fixed egress address on the
-// consumption plan, so the database is reachable from Azure but not from the public internet.
-resource postgresFirewall 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2024-08-01' = {
-  parent: postgres
-  name: 'AllowAzureServices'
-  properties: {
-    startIpAddress: '0.0.0.0'
-    endIpAddress: '0.0.0.0'
-  }
-}
+var cosmosConnectionString = cosmos.listConnectionStrings().connectionStrings[0].connectionString
 
 resource site 'Microsoft.Web/sites@2023-12-01' = {
   name: functionName
@@ -164,8 +165,10 @@ resource site 'Microsoft.Web/sites@2023-12-01' = {
         { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }
         { name: 'FUNCTIONS_WORKER_RUNTIME', value: 'dotnet-isolated' }
         { name: 'WEBSITE_RUN_FROM_PACKAGE', value: '1' }
-        { name: 'COMPLY_DB_CONNECTION', value: postgresConnectionString }
-        { name: 'COMPLY_DB_MIGRATE', value: '1' }
+        { name: 'COMPLY_COSMOS_CONNECTION', value: cosmosConnectionString }
+        { name: 'COMPLY_COSMOS_DATABASE', value: cosmosDatabaseName }
+        // Containers come from this template, so the worker does not try to create them at boot.
+        { name: 'COMPLY_COSMOS_CREATE_CONTAINERS', value: '0' }
         { name: 'COMPLY_AUTH_SECRET', value: authSecret }
         // CORS allowlist and sign-in redirect target: the Angular origin.
         { name: 'COMPLY_APP_URL', value: !empty(publicUrl) ? publicUrl : 'https://${staticSite.properties.defaultHostname}' }
@@ -203,7 +206,8 @@ output functionUrl string = 'https://${site.properties.defaultHostName}'
 output apiUrl string = !empty(apiUrl) ? apiUrl : defaultFunctionUrl
 output staticSiteName string = staticSite.name
 output staticSiteUrl string = 'https://${staticSite.properties.defaultHostname}'
-output postgresHost string = postgres.properties.fullyQualifiedDomainName
-output postgresDatabase string = databaseName
+output cosmosAccountName string = cosmos.name
+output cosmosEndpoint string = cosmos.properties.documentEndpoint
+output cosmosDatabase string = cosmosDatabaseName
 output blobEndpoint string = storage.properties.primaryEndpoints.blob
 output blobContainer string = containerName

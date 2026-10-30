@@ -1,3 +1,5 @@
+using Newtonsoft.Json;
+
 namespace Comply.Functions.Data;
 
 /// <summary>
@@ -5,18 +7,28 @@ namespace Comply.Functions.Data;
 /// </summary>
 public sealed class Organization
 {
+    [JsonProperty("id")]
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
     public string Slug { get; set; } = "";
     public DateTimeOffset CreatedAt { get; set; }
 
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public List<User> Users { get; set; } = [];
+
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public List<Assessment> Assessments { get; set; } = [];
+
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public List<McpKey> McpKeys { get; set; } = [];
 }
 
 public sealed class User
 {
+    [JsonProperty("id")]
     public string Id { get; set; } = "";
     public string OrganizationId { get; set; } = "";
     public string Email { get; set; } = "";
@@ -32,23 +44,32 @@ public sealed class User
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? LastLoginAt { get; set; }
 
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public Organization? Organization { get; set; }
+
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public List<ExternalLogin> ExternalLogins { get; set; } = [];
 }
 
 public sealed class ExternalLogin
 {
+    [JsonProperty("id")]
     public string Id { get; set; } = "";
     public string UserId { get; set; } = "";
     public string Provider { get; set; } = "";
     public string Subject { get; set; } = "";
     public DateTimeOffset CreatedAt { get; set; }
 
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public User? User { get; set; }
 }
 
 public sealed class Assessment
 {
+    [JsonProperty("id")]
     public string Id { get; set; } = "";
     public string OrganizationId { get; set; } = "";
     public string Framework { get; set; } = "";
@@ -66,13 +87,17 @@ public sealed class Assessment
     public DateTimeOffset? ReviewedAt { get; set; }
     public DateTimeOffset? ExportedAt { get; set; }
 
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public Organization? Organization { get; set; }
+
     public List<AssessmentRequirement> Requirements { get; set; } = [];
     public List<AssessmentEvent> Events { get; set; } = [];
 }
 
 public sealed class AssessmentRequirement
 {
+    [JsonProperty("id")]
     public string Id { get; set; } = "";
     public string AssessmentId { get; set; } = "";
     public string LibraryRequirementId { get; set; } = "";
@@ -86,12 +111,16 @@ public sealed class AssessmentRequirement
     public DateTimeOffset? CompletedAt { get; set; }
     public int Position { get; set; }
 
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public Assessment? Assessment { get; set; }
+
     public List<Evidence> Evidence { get; set; } = [];
 }
 
 public sealed class Evidence
 {
+    [JsonProperty("id")]
     public string Id { get; set; } = "";
     public string AssessmentRequirementId { get; set; } = "";
     public string Type { get; set; } = "";
@@ -111,11 +140,14 @@ public sealed class Evidence
     /// <summary>The Node <c>collectedAt</c> timestamp.</summary>
     public DateTimeOffset CreatedAt { get; set; }
 
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public AssessmentRequirement? AssessmentRequirement { get; set; }
 }
 
 public sealed class AssessmentEvent
 {
+    [JsonProperty("id")]
     public string Id { get; set; } = "";
     public string AssessmentId { get; set; } = "";
     public int Revision { get; set; }
@@ -123,11 +155,14 @@ public sealed class AssessmentEvent
     public string Message { get; set; } = "";
     public DateTimeOffset CreatedAt { get; set; }
 
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public Assessment? Assessment { get; set; }
 }
 
 public sealed class McpKey
 {
+    [JsonProperty("id")]
     public string Id { get; set; } = "";
     public string OrganizationId { get; set; } = "";
     public string Name { get; set; } = "";
@@ -138,6 +173,8 @@ public sealed class McpKey
     public DateTimeOffset? LastUsedAt { get; set; }
     public DateTimeOffset? RevokedAt { get; set; }
 
+    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public Organization? Organization { get; set; }
 }
 

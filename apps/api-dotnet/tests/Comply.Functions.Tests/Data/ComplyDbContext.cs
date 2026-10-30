@@ -3,8 +3,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Comply.Functions.Data;
 
 /// <summary>
-/// PostgreSQL schema for the Comply backend. Table and column names are snake_case so the
-/// database stays readable from SQL and migrations, independent of the .NET model names.
+/// EF Core model used by the test adapter (<see cref="EfComplyStore"/>). Production persistence
+/// goes through <see cref="CosmosComplyStore"/>; the model only needs to behave like a
+/// relational store for the in-memory provider.
 /// </summary>
 public sealed class ComplyDbContext(DbContextOptions<ComplyDbContext> options) : DbContext(options)
 {

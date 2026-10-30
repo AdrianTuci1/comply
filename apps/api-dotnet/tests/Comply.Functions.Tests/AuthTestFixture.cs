@@ -65,7 +65,8 @@ internal sealed class AuthFixture : IDisposable
 
         Factory = new PooledDbContextFactory<ComplyDbContext>(options);
         Database = new ComplyDatabase(Factory);
-        Users = new UserDirectory(Database, Time);
+        Store = new EfComplyStore(Database);
+        Users = new UserDirectory(Store, Time);
         Tokens = new AuthTokenService(Settings.Secret, Time);
         Auth = new AuthService(Users, Tokens, new PasswordHasher(), Time);
         Providers = OidcProviderCatalog.FromLookup(name =>
@@ -79,6 +80,7 @@ internal sealed class AuthFixture : IDisposable
     public AuthSettings Settings { get; }
     public PooledDbContextFactory<ComplyDbContext> Factory { get; }
     public ComplyDatabase Database { get; }
+    public EfComplyStore Store { get; }
     public UserDirectory Users { get; }
     public AuthTokenService Tokens { get; }
     public AuthService Auth { get; }

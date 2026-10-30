@@ -2,7 +2,6 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Comply.Functions.Agent;
 using Comply.Functions.Data;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Comply.Functions.Services;
@@ -58,7 +57,7 @@ public sealed record McpKeyIdentity(McpKey Key, Organization Organization);
 /// per tool.
 /// </summary>
 public sealed partial class McpKeyService(
-    ComplyDatabase database,
+    IComplyStore comply,
     TimeProvider time,
     Func<byte[]>? secretFactory = null,
     ILogger<McpKeyService>? logger = null)
@@ -67,7 +66,7 @@ public sealed partial class McpKeyService(
 
     private static readonly TimeSpan LastUsedWriteInterval = TimeSpan.FromMinutes(1);
 
-    private readonly ComplyDatabase _database = database;
+    private readonly IComplyStore _comply = comply;
     private readonly TimeProvider _time = time;
     private readonly Func<byte[]> _secretFactory =
         secretFactory ?? (() => System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
@@ -75,13 +74,11 @@ public sealed partial class McpKeyService(
 
     public async Task<IReadOnlyList<McpKeyView>> ListAsync(Organization organization, CancellationToken cancellationToken = default)
     {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        var keys = await context.McpKeys
-            .Where(key => key.OrganizationId == organization.Id)
+        var keys = await _comply.ListMcpKeysAsync(organization.Id, cancellationToken);
+        return keys
             .OrderByDescending(key => key.CreatedAt)
-            .ToListAsync(cancellationToken);
-
-        return keys.Select(key => View(key, organization)).ToList();
+            .Select(key => View(key, organization))
+            .ToList();
     }
 
     public async Task<CreatedMcpKey> CreateAsync(
@@ -111,9 +108,7 @@ public sealed partial class McpKeyService(
             CreatedAt = now,
         };
 
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        context.McpKeys.Add(key);
-        await context.SaveChangesAsync(cancellationToken);
+        await _comply.AddMcpKeyAsync(key, cancellationToken);
         _logger?.LogInformation("Created an MCP key for {Slug}.", organization.Slug);
 
         return new CreatedMcpKey(View(key, organization), secret);
@@ -125,10 +120,7 @@ public sealed partial class McpKeyService(
         string keyId,
         CancellationToken cancellationToken = default)
     {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        var key = await context.McpKeys.SingleOrDefaultAsync(
-            item => item.Id == keyId && item.OrganizationId == organization.Id,
-            cancellationToken);
+        var key = await _comply.FindMcpKeyByIdAsync(organization.Id, keyId, cancellationToken);
 
         if (key is null)
         {
@@ -138,7 +130,7 @@ public sealed partial class McpKeyService(
         if (key.RevokedAt is null)
         {
             key.RevokedAt = _time.GetUtcNow();
-            await context.SaveChangesAsync(cancellationToken);
+            await _comply.SaveMcpKeyAsync(key, cancellationToken);
         }
 
         return View(key, organization);
@@ -156,15 +148,10 @@ public sealed partial class McpKeyService(
         var tenant = match.Groups["tenant"].Value;
         var hash = AgentText.Sha256Hex(token!);
 
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        var key = await context.McpKeys.SingleOrDefaultAsync(
-            item => item.KeyHash == hash,
-            cancellationToken);
+        var key = await _comply.FindMcpKeyByHashAsync(hash, cancellationToken);
         if (key is null || key.RevokedAt is not null) return null;
 
-        var organization = await context.Organizations.SingleOrDefaultAsync(
-            item => item.Id == key.OrganizationId,
-            cancellationToken);
+        var organization = await _comply.FindOrganizationByIdAsync(key.OrganizationId, cancellationToken);
         if (organization is null || !string.Equals(organization.Slug, tenant, StringComparison.Ordinal))
         {
             return null;
@@ -174,7 +161,7 @@ public sealed partial class McpKeyService(
         if (key.LastUsedAt is null || now - key.LastUsedAt.Value > LastUsedWriteInterval)
         {
             key.LastUsedAt = now;
-            await context.SaveChangesAsync(cancellationToken);
+            await _comply.SaveMcpKeyAsync(key, cancellationToken);
         }
 
         return new McpKeyIdentity(key, organization);

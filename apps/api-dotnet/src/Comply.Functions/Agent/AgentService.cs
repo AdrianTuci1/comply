@@ -6,7 +6,6 @@ using System.Text.RegularExpressions;
 using Comply.Functions.Data;
 using Comply.Functions.Models;
 using Comply.Functions.Services;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Comply.Functions.Agent;
@@ -36,20 +35,20 @@ public sealed partial class AgentService
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    private readonly ComplyDatabase _database;
+    private readonly IComplyStore _comply;
     private readonly LibraryStore _store;
     private readonly TimeProvider _time;
     private readonly Func<string> _idFactory;
     private readonly ILogger<AgentService>? _logger;
 
     public AgentService(
-        ComplyDatabase database,
+        IComplyStore comply,
         LibraryStore store,
         TimeProvider time,
         Func<string>? idFactory = null,
         ILogger<AgentService>? logger = null)
     {
-        _database = database;
+        _comply = comply;
         _store = store;
         _time = time;
         _idFactory = idFactory ?? (() => Guid.NewGuid().ToString("N"));
@@ -209,9 +208,7 @@ public sealed partial class AgentService
             CreatedAt = now,
         });
 
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        context.Assessments.Add(assessment);
-        await SaveAsync(context, cancellationToken);
+        await _comply.AddAssessmentAsync(assessment, cancellationToken);
         return AgentJson.State(View(assessment));
     }
 
@@ -220,8 +217,7 @@ public sealed partial class AgentService
         ToolArguments args,
         CancellationToken cancellationToken = default)
     {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        var assessment = await LoadAsync(context, organizationId, args.Text("assessmentId"), cancellationToken);
+        var assessment = await LoadAsync(organizationId, args.Text("assessmentId"), cancellationToken);
 
         var scope = (args.Text("scope") ?? "").Trim();
         if (scope.Length == 0)
@@ -235,7 +231,7 @@ public sealed partial class AgentService
         assessment.PeriodTo = Date(periodTo);
         if (assessment.Phase == AssessmentPhases.Scope) assessment.Phase = AssessmentPhases.Collect;
         Touch(assessment, "scope_set", "Scope confirmed in English.", _time.GetUtcNow());
-        await SaveAsync(context, cancellationToken);
+        await _comply.SaveAssessmentAsync(assessment, cancellationToken);
         return AgentJson.State(View(assessment));
     }
 
@@ -545,8 +541,7 @@ public sealed partial class AgentService
         ToolArguments args,
         CancellationToken cancellationToken = default)
     {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        var assessment = await LoadAsync(context, organizationId, args.Text("assessmentId"), cancellationToken);
+        var assessment = await LoadAsync(organizationId, args.Text("assessmentId"), cancellationToken);
         RequireScope(assessment);
         var item = RequireItem(assessment, args.Text("requirementId"));
         if (item.Status == Data.RequirementStatuses.Completed)
@@ -588,7 +583,7 @@ public sealed partial class AgentService
         item.Evidence.Add(evidence);
         item.Status = Data.RequirementStatuses.EvidenceCollected;
         Touch(assessment, "evidence_submitted", $"{item.Ref}: evidence submitted.", _time.GetUtcNow());
-        await SaveAsync(context, cancellationToken);
+        await _comply.SaveAssessmentAsync(assessment, cancellationToken);
 
         var view = View(assessment);
         var response = AgentJson.Base(view);
@@ -623,8 +618,7 @@ public sealed partial class AgentService
         ToolArguments args,
         CancellationToken cancellationToken = default)
     {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        var assessment = await LoadAsync(context, organizationId, args.Text("assessmentId"), cancellationToken);
+        var assessment = await LoadAsync(organizationId, args.Text("assessmentId"), cancellationToken);
         RequireScope(assessment);
         var item = RequireItem(assessment, args.Text("requirementId"));
 
@@ -659,7 +653,7 @@ public sealed partial class AgentService
             Touch(assessment, "ready_for_review", "All requirements are complete.", now);
         }
 
-        await SaveAsync(context, cancellationToken);
+        await _comply.SaveAssessmentAsync(assessment, cancellationToken);
         var view = View(assessment);
         return RequirementResponse(view, item.LibraryRequirementId);
     }
@@ -669,8 +663,7 @@ public sealed partial class AgentService
         ToolArguments args,
         CancellationToken cancellationToken = default)
     {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        var assessment = await LoadAsync(context, organizationId, args.Text("assessmentId"), cancellationToken);
+        var assessment = await LoadAsync(organizationId, args.Text("assessmentId"), cancellationToken);
         RequireScope(assessment);
         var item = RequireItem(assessment, args.Text("requirementId"));
 
@@ -689,7 +682,7 @@ public sealed partial class AgentService
             assessment.Phase = AssessmentPhases.Review;
         }
 
-        await SaveAsync(context, cancellationToken);
+        await _comply.SaveAssessmentAsync(assessment, cancellationToken);
         var view = View(assessment);
         return RequirementResponse(view, item.LibraryRequirementId);
     }
@@ -699,8 +692,7 @@ public sealed partial class AgentService
         ToolArguments args,
         CancellationToken cancellationToken = default)
     {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        var assessment = await LoadAsync(context, organizationId, args.Text("assessmentId"), cancellationToken);
+        var assessment = await LoadAsync(organizationId, args.Text("assessmentId"), cancellationToken);
         RequireScope(assessment);
 
         var open = assessment.Requirements
@@ -729,7 +721,7 @@ public sealed partial class AgentService
         assessment.Phase = AssessmentPhases.Export;
         assessment.ReviewedAt = _time.GetUtcNow();
         Touch(assessment, "reviewed", "Assessment reviewed.", assessment.ReviewedAt.Value);
-        await SaveAsync(context, cancellationToken);
+        await _comply.SaveAssessmentAsync(assessment, cancellationToken);
 
         var view = View(assessment);
         var response = AgentJson.Base(view);
@@ -749,8 +741,7 @@ public sealed partial class AgentService
         ToolArguments args,
         CancellationToken cancellationToken = default)
     {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        var assessment = await LoadAsync(context, organizationId, args.Text("assessmentId"), cancellationToken);
+        var assessment = await LoadAsync(organizationId, args.Text("assessmentId"), cancellationToken);
         if (assessment.ReviewedAt is null)
         {
             throw new AgentException("Review the assessment before exporting it.", "review_required");
@@ -760,7 +751,7 @@ public sealed partial class AgentService
         assessment.Phase = AssessmentPhases.Complete;
         assessment.ExportedAt = now;
         Touch(assessment, "exported", "Audit package generated.", now);
-        await SaveAsync(context, cancellationToken);
+        await _comply.SaveAssessmentAsync(assessment, cancellationToken);
 
         var view = View(assessment);
         var requirements = new JsonArray();
@@ -858,9 +849,8 @@ public sealed partial class AgentService
 
     private async Task<List<SummaryRow>> QuerySummariesAsync(string organizationId, CancellationToken cancellationToken)
     {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        var rows = await context.Assessments
-            .Where(item => item.OrganizationId == organizationId)
+        var assessments = await _comply.ListAssessmentsAsync(organizationId, cancellationToken);
+        var rows = assessments
             .Select(item => new SummaryRow(
                 item.Id,
                 item.Name,
@@ -870,13 +860,13 @@ public sealed partial class AgentService
                 item.PeriodFrom,
                 item.PeriodTo,
                 item.UpdatedAt,
-                item.Requirements.Count(),
+                item.Requirements.Count,
                 item.Requirements.Count(requirement => requirement.Status == Data.RequirementStatuses.Completed),
                 item.Requirements.Count(requirement => requirement.Status == Data.RequirementStatuses.NotApplicable),
                 item.Requirements.Count(requirement => requirement.Status == Data.RequirementStatuses.EvidenceCollected),
                 item.Requirements.Count(requirement => requirement.Status == Data.RequirementStatuses.Open),
                 item.Requirements.SelectMany(requirement => requirement.Evidence).Count()))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         rows.Sort((left, right) => right.UpdatedAt.CompareTo(left.UpdatedAt));
         return rows;
@@ -924,25 +914,21 @@ public sealed partial class AgentService
         string? assessmentId,
         CancellationToken cancellationToken)
     {
-        await using var context = await _database.Factory.CreateDbContextAsync(cancellationToken);
-        var assessment = await LoadAsync(context, organizationId, assessmentId, cancellationToken);
+        var assessment = await LoadAsync(organizationId, assessmentId, cancellationToken);
         return View(assessment);
     }
 
-    private static async Task<Assessment> LoadAsync(
-        ComplyDbContext context,
+    private async Task<Assessment> LoadAsync(
         string organizationId,
         string? assessmentId,
         CancellationToken cancellationToken)
     {
-        var assessment = await context.Assessments
-            .Include(item => item.Requirements)
-            .ThenInclude(requirement => requirement.Evidence)
-            .Include(item => item.Events)
-            .SingleOrDefaultAsync(
-                item => item.Id == assessmentId && item.OrganizationId == organizationId,
-                cancellationToken);
+        if (string.IsNullOrWhiteSpace(assessmentId))
+        {
+            throw new AgentException("Assessment not found for this tenant.", "not_found");
+        }
 
+        var assessment = await _comply.GetAssessmentAsync(organizationId, assessmentId, cancellationToken);
         return assessment ?? throw new AgentException("Assessment not found for this tenant.", "not_found");
     }
 
@@ -1121,20 +1107,6 @@ public sealed partial class AgentService
         var offset = (long)(page - 1) * pageSize;
         if (offset >= items.Count) return [];
         return items.Skip((int)offset).Take(pageSize).ToList();
-    }
-
-    private async Task SaveAsync(ComplyDbContext context, CancellationToken cancellationToken)
-    {
-        if (!context.Database.IsRelational())
-        {
-            await context.SaveChangesAsync(cancellationToken);
-            return;
-        }
-
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-        await context.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-        _logger?.LogDebug("Agent assessment write committed.");
     }
 
     private string IdSuffix()
