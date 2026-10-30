@@ -1,0 +1,810 @@
+{
+  "frameworkId": "soc2",
+  "version": "2022.1.0",
+  "source": {
+    "id": "src-soc2-2022",
+    "frameworkId": "soc2",
+    "title": "SOC 2 Trust Services Criteria",
+    "publisher": "AICPA",
+    "version": "2022.1.0",
+    "kind": "pdf",
+    "license": "proprietary",
+    "importedAt": "2026-10-30T00:00:00.000Z",
+    "lastReviewedAt": "2026-10-30T00:00:00.000Z"
+  },
+  "requirements": [
+    {
+      "ref": "CC1.1",
+      "title": "Integrity and ethical values",
+      "theme": "organizational",
+      "text": "Set expectations for ethical conduct and communicate them to staff and contractors. Evidence: code of conduct, acknowledgements, and investigation records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC1.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC1.2",
+      "title": "Board oversight",
+      "theme": "organizational",
+      "text": "Provide independent oversight of internal control over security. Evidence: board or committee charter, minutes, and oversight reports.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC1.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC1.3",
+      "title": "Management structure and authority",
+      "theme": "organizational",
+      "text": "Define reporting lines, authority, and responsibilities for security work. Evidence: organization chart, delegations, and role descriptions.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC1.3",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC1.4",
+      "title": "Competence",
+      "theme": "organizational",
+      "text": "Require the skills needed for security roles and support their development. Evidence: job requirements, training records, and performance reviews.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC1.4",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC1.5",
+      "title": "Accountability",
+      "theme": "organizational",
+      "text": "Hold individuals accountable for security responsibilities and measure performance. Evidence: objectives, performance reviews, and corrective actions.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC1.5",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC2.1",
+      "title": "Quality information",
+      "theme": "organizational",
+      "text": "Use relevant and accurate information to operate and monitor security controls. Evidence: data sources, quality checks, and management reports.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC2.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC2.2",
+      "title": "Internal communication",
+      "theme": "organizational",
+      "text": "Communicate security responsibilities and expectations across the organization. Evidence: policies, briefings, and acknowledgement records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC2.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC2.3",
+      "title": "External communication",
+      "theme": "organizational",
+      "text": "Communicate with customers, partners, and regulators about security matters as required. Evidence: communication channels, notices, and inquiry logs.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC2.3",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC3.1",
+      "title": "Objectives and risk identification",
+      "theme": "organizational",
+      "text": "Define security objectives and identify risks that could prevent their achievement. Evidence: objectives, risk register, and assessment records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC3.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC3.2",
+      "title": "Risk analysis",
+      "theme": "organizational",
+      "text": "Analyze identified risks for likelihood and impact, and decide how to respond. Evidence: risk scoring method, risk register, and treatment plans.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC3.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC3.3",
+      "title": "Fraud risk",
+      "theme": "organizational",
+      "text": "Consider the potential for fraud when assessing risks to security objectives. Evidence: fraud risk assessment and management review.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC3.3",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC3.4",
+      "title": "Changes in risk",
+      "theme": "organizational",
+      "text": "Reassess risk when the business, technology, or threat environment changes. Evidence: change impact assessments and updated risk records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC3.4",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC4.1",
+      "title": "Ongoing and separate evaluations",
+      "theme": "procedures",
+      "text": "Evaluate controls through continuous monitoring and periodic independent reviews. Evidence: monitoring reports, internal audit results, and test scripts.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC4.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC4.2",
+      "title": "Communication of deficiencies",
+      "theme": "procedures",
+      "text": "Report control deficiencies to those responsible and track remediation. Evidence: issue register, remediation plans, and closure evidence.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC4.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC5.1",
+      "title": "Control activities selection",
+      "theme": "organizational",
+      "text": "Select controls that mitigate the risks identified for security objectives. Evidence: control matrix and risk-to-control mapping.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC5.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC5.2",
+      "title": "Technology general controls",
+      "theme": "infrastructure",
+      "text": "Rely on properly designed and operating technology controls, including infrastructure and processes. Evidence: technology control test results and system inventories.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC5.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC5.3",
+      "title": "Policies and procedures",
+      "theme": "organizational",
+      "text": "Document policies and procedures and keep them current and available. Evidence: policy library, version history, and review approvals.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC5.3",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC6.1",
+      "title": "Logical access security",
+      "theme": "infrastructure",
+      "text": "Protect systems and data with logical access controls across software, infrastructure, and architecture. Evidence: access control design, identity configuration, and test results.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC6.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC6.2",
+      "title": "User registration and authorization",
+      "theme": "infrastructure",
+      "text": "Register and authorize new internal and external users before access is granted. Evidence: onboarding tickets, approvals, and user listings.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC6.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC6.3",
+      "title": "Role-based access and least privilege",
+      "theme": "infrastructure",
+      "text": "Assign access by role and limit it to what the role requires. Evidence: role definitions, entitlement mappings, and access reviews.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC6.3",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC6.4",
+      "title": "Physical access to facilities",
+      "theme": "infrastructure",
+      "text": "Restrict physical access to facilities that host or support systems and data. Evidence: badge lists, visitor logs, and access reviews.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC6.4",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC6.5",
+      "title": "Access removal",
+      "theme": "infrastructure",
+      "text": "Remove logical and physical access promptly when people leave or change roles. Evidence: termination tickets, deprovisioning logs, and badge returns.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC6.5",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC6.6",
+      "title": "External threats",
+      "theme": "infrastructure",
+      "text": "Protect against threats that originate outside the system boundary. Evidence: boundary diagram, firewall rules, and intrusion alerts.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC6.6",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC6.7",
+      "title": "Information transmission and removal",
+      "theme": "infrastructure",
+      "text": "Restrict transmission, movement, and removal of information to authorized channels. Evidence: transfer policy, encryption settings, and exception approvals.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC6.7",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC6.8",
+      "title": "Malicious software",
+      "theme": "infrastructure",
+      "text": "Prevent, detect, and respond to unauthorized or malicious software. Evidence: endpoint controls, application allowlists, and malware alerts.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC6.8",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC7.1",
+      "title": "Configuration and vulnerability management",
+      "theme": "infrastructure",
+      "text": "Detect configuration drift and vulnerabilities, and correct them on a defined schedule. Evidence: baselines, scans, and remediation records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC7.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC7.2",
+      "title": "Monitoring",
+      "theme": "infrastructure",
+      "text": "Monitor system components for anomalies that indicate security incidents. Evidence: monitoring coverage, alert rules, and response tickets.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC7.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC7.3",
+      "title": "Incident identification",
+      "theme": "procedures",
+      "text": "Evaluate security events to decide whether they are incidents and assign severity. Evidence: triage records, severity guide, and incident log.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC7.3",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC7.4",
+      "title": "Incident response",
+      "theme": "procedures",
+      "text": "Execute the incident response plan and communicate with affected parties. Evidence: incident plans, response timelines, and communications.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC7.4",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC7.5",
+      "title": "Incident recovery",
+      "theme": "procedures",
+      "text": "Recover from incidents and confirm that systems and data are restored correctly. Evidence: recovery plans, restoration tests, and closure reports.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC7.5",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC8.1",
+      "title": "Change management",
+      "theme": "product",
+      "text": "Authorize, design, test, approve, and implement changes through a controlled process. Evidence: change tickets, approvals, test results, and deployment logs.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC8.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC9.1",
+      "title": "Risk mitigation",
+      "theme": "organizational",
+      "text": "Identify and implement mitigation for business disruption and security risks. Evidence: risk treatment plans, insurance, and continuity arrangements.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC9.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "CC9.2",
+      "title": "Vendor risk management",
+      "theme": "organizational",
+      "text": "Assess and monitor vendors and business partners that could affect security objectives. Evidence: vendor inventory, due diligence, and contract reviews.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), CC9.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "A1.1",
+      "title": "Capacity management",
+      "theme": "infrastructure",
+      "text": "Monitor and manage capacity so systems meet availability commitments. Evidence: capacity plans, utilization reports, and scaling records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), A1.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "A1.2",
+      "title": "Backup and recovery",
+      "theme": "infrastructure",
+      "text": "Maintain backups and recovery arrangements that meet availability objectives. Evidence: backup schedules, off-site copies, and restore test reports.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), A1.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "A1.3",
+      "title": "Recovery testing",
+      "theme": "infrastructure",
+      "text": "Test recovery plans periodically and correct failures found in exercises. Evidence: exercise plans, results, and follow-up actions.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), A1.3",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "PI1.1",
+      "title": "Processing objectives",
+      "theme": "product",
+      "text": "Define what complete, valid, accurate, timely, and authorized processing means for the service. Evidence: processing objectives and service specifications.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), PI1.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "PI1.2",
+      "title": "Input controls",
+      "theme": "product",
+      "text": "Validate inputs so processing uses complete and accurate data. Evidence: input validation rules, error reports, and reconciliation.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), PI1.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "PI1.3",
+      "title": "Processing controls",
+      "theme": "product",
+      "text": "Monitor processing for errors and exceptions, and resolve them. Evidence: job monitoring, exception queues, and correction records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), PI1.3",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "PI1.4",
+      "title": "Output controls",
+      "theme": "product",
+      "text": "Verify that outputs are complete, accurate, and delivered to authorized recipients. Evidence: output reconciliation and distribution records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), PI1.4",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "PI1.5",
+      "title": "Stored data integrity",
+      "theme": "product",
+      "text": "Protect stored data from unauthorized or accidental alteration and loss. Evidence: integrity checks, access controls, and restore records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), PI1.5",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "C1.1",
+      "title": "Confidentiality identification and retention",
+      "theme": "data_privacy",
+      "text": "Identify confidential information and retain it only as long as needed. Evidence: data inventory, retention schedule, and disposal records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), C1.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "C1.2",
+      "title": "Confidentiality disposal",
+      "theme": "data_privacy",
+      "text": "Dispose of confidential information securely when it is no longer required. Evidence: disposal procedure and destruction certificates.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), C1.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P1.1",
+      "title": "Privacy notice",
+      "theme": "data_privacy",
+      "text": "Tell data subjects what personal information is collected and how it is used. Evidence: privacy notice, publication record, and change history.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P1.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P2.1",
+      "title": "Choice and consent",
+      "theme": "data_privacy",
+      "text": "Offer and record choices about the collection, use, retention, and disclosure of personal information. Evidence: consent flows and consent records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P2.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P3.1",
+      "title": "Collection limited to objectives",
+      "theme": "data_privacy",
+      "text": "Collect personal information only for the purposes described in the notice. Evidence: data inventory and collection-point review.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P3.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P3.2",
+      "title": "Lawful and fair collection",
+      "theme": "data_privacy",
+      "text": "Collect personal information by lawful and fair means. Evidence: collection procedures and legal basis records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P3.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P4.1",
+      "title": "Use limited to objectives",
+      "theme": "data_privacy",
+      "text": "Use personal information only for identified purposes and any consent obtained. Evidence: purpose mapping and access review records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P4.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P4.2",
+      "title": "Retention",
+      "theme": "data_privacy",
+      "text": "Retain personal information only as long as the stated objectives require. Evidence: retention schedule and purge reports.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P4.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P4.3",
+      "title": "Disposal",
+      "theme": "data_privacy",
+      "text": "Dispose of personal information securely when retention ends. Evidence: disposal procedure and destruction logs.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P4.3",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P5.1",
+      "title": "Access by data subjects",
+      "theme": "data_privacy",
+      "text": "Let authenticated data subjects access their personal information and learn whether it is held. Evidence: request workflow and response records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P5.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P5.2",
+      "title": "Correction",
+      "theme": "data_privacy",
+      "text": "Correct, amend, or append personal information on request and notify relevant third parties. Evidence: correction requests and propagation records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P5.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P6.1",
+      "title": "Disclosure with consent",
+      "theme": "data_privacy",
+      "text": "Disclose personal information to third parties only with consent or another stated basis. Evidence: disclosure register and consent records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P6.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P6.2",
+      "title": "Authorized disclosure records",
+      "theme": "data_privacy",
+      "text": "Keep complete and accurate records of authorized disclosures. Evidence: disclosure log and reconciliation.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P6.2",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P6.3",
+      "title": "Unauthorized disclosure records",
+      "theme": "data_privacy",
+      "text": "Record detected or reported unauthorized disclosures and their handling. Evidence: incident register and breach investigation files.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P6.3",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P6.4",
+      "title": "Vendor privacy commitments",
+      "theme": "data_privacy",
+      "text": "Obtain privacy commitments from vendors and other third parties that handle personal information. Evidence: contract clauses and vendor assessments.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P6.4",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P6.5",
+      "title": "Vendor breach notification",
+      "theme": "data_privacy",
+      "text": "Require vendors to notify the organization of actual or suspected unauthorized disclosures. Evidence: contract terms and notification test records.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P6.5",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P6.6",
+      "title": "Breach notification",
+      "theme": "data_privacy",
+      "text": "Notify affected data subjects, regulators, and others when a breach requires it. Evidence: notification procedure and breach notices.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P6.6",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P6.7",
+      "title": "Accounting of disclosures",
+      "theme": "data_privacy",
+      "text": "Provide data subjects with an accounting of personal information held and disclosed. Evidence: request workflow and disclosure reports.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P6.7",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P7.1",
+      "title": "Data quality",
+      "theme": "data_privacy",
+      "text": "Keep personal information accurate, current, and complete for its intended use. Evidence: quality checks, correction requests, and reconciliation.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P7.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    },
+    {
+      "ref": "P8.1",
+      "title": "Privacy monitoring and enforcement",
+      "theme": "data_privacy",
+      "text": "Monitor privacy compliance, handle complaints, and apply consequences for violations. Evidence: complaint log, investigation records, and disciplinary actions.",
+      "sourceRef": "AICPA Trust Services Criteria (2017, revised 2022), P8.1",
+      "status": "draft",
+      "review": {
+        "reviewer": "Comply content team",
+        "reviewedAt": "2026-10-30T00:00:00.000Z",
+        "reformulated": true
+      }
+    }
+  ]
+}

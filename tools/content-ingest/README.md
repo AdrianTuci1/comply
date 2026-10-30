@@ -4,7 +4,7 @@ Extrage cerințe din documente oficiale, le supune revizuirii umane și construi
 bundle-uri versionate cu manifest SHA-256.
 
 Documentația completă, inclusiv regulile de licențiere și testul cu Docker, este în
-[`.agents/content-pipeline.md`](../../.agents/content-pipeline.md).
+[`docs/agents/content-pipeline.md`](../../docs/agents/content-pipeline.md).
 
 ## Comenzi rapide
 

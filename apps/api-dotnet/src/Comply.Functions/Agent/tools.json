@@ -1,0 +1,371 @@
+{
+  "server": {
+    "name": "comply",
+    "version": "1.0.0",
+    "instructions": "Comply guides a compliance assessment. Speak to the user in their language. Publish all scope, evidence, conclusions, and exports in English. Call get_assessment_state after each answer and follow next_actions."
+  },
+  "tools": [
+    {
+      "name": "get_agent_guide",
+      "title": "Get the guided assessment workflow",
+      "description": "Return the step-by-step journey and the language policy. Call this once when the user asks how the audit works. The agent speaks the user's language and publishes in English.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "start_assessment",
+      "title": "Start a guided assessment",
+      "description": "Create an assessment for one framework. If scope is omitted, the journey starts at the scope step. Returns progress, blockers, and next actions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "framework": {
+            "type": "string",
+            "enum": ["nis2", "iso27001", "ai-act", "soc2"]
+          },
+          "name": {
+            "type": "string",
+            "description": "Short English title."
+          },
+          "scope": {
+            "type": "string",
+            "description": "Systems, locations, and boundaries in English."
+          },
+          "periodFrom": {
+            "type": "string",
+            "description": "ISO date, YYYY-MM-DD."
+          },
+          "periodTo": {
+            "type": "string",
+            "description": "ISO date, YYYY-MM-DD."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2000,
+            "description": "How many requirements to include. Defaults to every requirement in the framework."
+          }
+        },
+        "required": ["framework"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_assessments",
+      "title": "List assessments",
+      "description": "List the assessments of the current tenant, newest first, with pagination metadata.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "minimum": 1 },
+          "pageSize": { "type": "integer", "minimum": 1, "maximum": 100 }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_assessment_state",
+      "title": "Get assessment state",
+      "description": "Read the phase, progress, blockers, and next actions. Call it after every user answer so the guidance stays current.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assessmentId": {
+            "type": "string"
+          }
+        },
+        "required": ["assessmentId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "set_scope",
+      "title": "Confirm scope",
+      "description": "Store the English scope, systems, locations, and assessment period.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assessmentId": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "periodFrom": {
+            "type": "string"
+          },
+          "periodTo": {
+            "type": "string"
+          }
+        },
+        "required": ["assessmentId", "scope"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_brief",
+      "title": "Get the prioritized brief",
+      "description": "Return up to five requirements to work on, each with an English question to ask the user.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assessmentId": {
+            "type": "string"
+          }
+        },
+        "required": ["assessmentId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_requirements",
+      "title": "List requirements",
+      "description": "Paginate the assessment checklist. Filter by status or search reference, title, description, and conclusion. Returns page_info with total_pages, next_page, and previous_page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assessmentId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "evidence_collected",
+              "completed",
+              "not_applicable"
+            ]
+          },
+          "query": {
+            "type": "string"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": ["assessmentId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "search_requirements",
+      "title": "Search requirements by similarity",
+      "description": "Rank the assessment checklist by lexical similarity to an English query or to another requirement. Use it to find related controls, duplicates, or requirements that one artifact may cover. Translate the user's terms into English first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assessmentId": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string",
+            "description": "English terms to search for, for example incident response."
+          },
+          "similarTo": {
+            "type": "string",
+            "description": "Requirement id to use as the reference text instead of a query."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "evidence_collected",
+              "completed",
+              "not_applicable"
+            ]
+          },
+          "minScore": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Minimum cosine similarity, default 0.05."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": ["assessmentId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_progress",
+      "title": "Track assessment progress",
+      "description": "Return completion counts by status and theme, the next open requirements, recent events, and the next action. Use it to report progress without fetching the full checklist.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assessmentId": {
+            "type": "string"
+          }
+        },
+        "required": ["assessmentId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_requirement",
+      "title": "Get one requirement",
+      "description": "Return the requirement text, evidence already collected, and the question to ask the user.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assessmentId": {
+            "type": "string"
+          },
+          "requirementId": {
+            "type": "string"
+          }
+        },
+        "required": ["assessmentId", "requirementId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "submit_evidence",
+      "title": "Submit evidence",
+      "description": "Attach an artifact to a requirement. The summary must be in English and must state what the artifact shows. Never send credentials or raw secrets.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assessmentId": {
+            "type": "string"
+          },
+          "requirementId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "description": "Short English title."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "document",
+              "screenshot",
+              "log_export",
+              "api_report",
+              "attestation"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "description": "System, team, or document the evidence comes from."
+          },
+          "summary": {
+            "type": "string",
+            "description": "English summary of the result shown by the evidence."
+          },
+          "citation": {
+            "type": "string",
+            "description": "URL, ticket, document id, or location the auditor can verify."
+          },
+          "collectedAt": {
+            "type": "string",
+            "description": "ISO timestamp."
+          }
+        },
+        "required": [
+          "assessmentId",
+          "requirementId",
+          "title",
+          "source",
+          "summary"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "complete_requirement",
+      "title": "Complete a requirement",
+      "description": "Record the English conclusion and close the requirement. At least one evidence artifact is required.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assessmentId": {
+            "type": "string"
+          },
+          "requirementId": {
+            "type": "string"
+          },
+          "conclusion": {
+            "type": "string",
+            "description": "One or two English sentences grounded in the evidence."
+          },
+          "language": {
+            "type": "string",
+            "enum": ["en"]
+          }
+        },
+        "required": ["assessmentId", "requirementId", "conclusion"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "mark_not_applicable",
+      "title": "Mark a requirement not applicable",
+      "description": "Close a requirement that does not apply, with an English reason the auditor can review.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assessmentId": {
+            "type": "string"
+          },
+          "requirementId": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": ["assessmentId", "requirementId", "reason"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "review_assessment",
+      "title": "Review the assessment",
+      "description": "Check that every requirement is complete and move the assessment to export.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assessmentId": {
+            "type": "string"
+          }
+        },
+        "required": ["assessmentId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "export_assessment",
+      "title": "Export the audit package",
+      "description": "Return the English audit package with manifest, citations, hashes, and conclusions. The assessment must be reviewed first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assessmentId": {
+            "type": "string"
+          }
+        },
+        "required": ["assessmentId"],
+        "additionalProperties": false
+      }
+    }
+  ]
+}

@@ -9,21 +9,21 @@ const out = join(root, "dist", "azure");
 await rm(out, { recursive: true, force: true });
 await mkdir(join(out, "src", "functions"), { recursive: true });
 
-await cp(join(root, "azure", "functions", "host.json"), join(out, "host.json"));
+await cp(join(root, "apps", "functions-node", "host.json"), join(out, "host.json"));
 await cp(
-  join(root, "azure", "functions", "src", "functions", "comply.js"),
+  join(root, "apps", "functions-node", "src", "functions", "comply.js"),
   join(out, "src", "functions", "comply.js"),
 );
-await cp(join(root, "src", "server", "api"), join(out, "server"), {
+await cp(join(root, "apps", "api-node"), join(out, "server"), {
   recursive: true,
 });
 await rm(join(out, "server", "test"), { recursive: true, force: true });
-await cp(join(root, "src", "web", "dist", "web", "browser"), join(out, "web"), {
+await cp(join(root, "apps", "web", "dist", "web", "browser"), join(out, "web"), {
   recursive: true,
 });
 
 const functionsPackage = JSON.parse(
-  await readFile(join(root, "azure", "functions", "package.json"), "utf8"),
+  await readFile(join(root, "apps", "functions-node", "package.json"), "utf8"),
 );
 await writeFile(
   join(out, "package.json"),

@@ -1,5 +1,5 @@
 # .NET
-src/server/**/bin/
+apps/api-dotnet/**/bin/
 obj/
 bin/*
 !bin/comply.mjs
@@ -23,6 +23,13 @@ coverage/
 # Build artifacts
 *.zip
 /content/**/build/
+
+# Local agent tooling and generated artifacts
+.grok/
+.taste-skill/
+skills-lock.json
+.playwright/
+test-results/
 
 # Source documents for content ingestion (licensing)
 /content/_sources/**

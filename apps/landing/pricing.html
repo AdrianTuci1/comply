@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pricing | Comply</title>
+    <meta
+      name="description"
+      content="Comply is free while it is in preview. Self-host it on your server with no card and no checkout."
+    />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="assets/fonts/stack-sans-text.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="assets/fonts/stack-sans-headline.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="assets/site.css" />
+    <script src="assets/config.js"></script>
+    <script src="assets/site.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="wrap header-inner">
+        <a class="brand" href="index.html" aria-label="Comply home">
+          <span class="brand-mark">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l8 3v6c0 4.8-3.4 8-8 9-4.6-1-8-4.2-8-9V6z" />
+              <path d="M9 12l2 2 4-4.2" />
+            </svg>
+          </span>
+          <span class="brand-name">Comply</span>
+        </a>
+
+        <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav">
+          Menu
+        </button>
+
+        <nav class="site-nav" id="site-nav" aria-label="Primary">
+          <a href="index.html#product">Product</a>
+          <a href="pricing.html" aria-current="page">Pricing</a>
+          <a href="#" data-site-link="docs">Docs</a>
+          <a href="support.html">Support</a>
+          <a href="#" data-site-link="signin">Sign in</a>
+          <a class="btn btn--primary btn--small" href="index.html#setup">Set up</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="pricing-hero">
+        <div class="wrap">
+          <h1 data-reveal>Free while it is in preview.</h1>
+          <p data-reveal data-delay="1">
+            Self-host Comply on your own server. No card, no checkout, and no hosted plan to buy.
+          </p>
+        </div>
+      </section>
+
+      <section class="pricing-section pricing-section--flush">
+        <div class="wrap">
+          <div class="price-panel" data-reveal data-delay="2">
+            <div class="price-panel__head">
+              <h2>Self-hosted</h2>
+              <p class="price-panel__price">
+                $0
+                <span>During preview. No card.</span>
+              </p>
+              <p>
+                One container serves the interface, the API, the MCP endpoint, and the public trust
+                page.
+              </p>
+              <a class="btn btn--light" href="index.html#setup">Set up with your agent</a>
+              <ul class="price-requirements">
+                <li>Docker Engine 24+ with Compose v2</li>
+                <li>Python 3.8+ for the installer</li>
+                <li>A server you control</li>
+              </ul>
+            </div>
+            <dl class="price-panel__list">
+              <div class="price-row">
+                <dt>Users</dt>
+                <dd>No per-seat limit</dd>
+              </div>
+              <div class="price-row">
+                <dt>Assessments</dt>
+                <dd>No server-side limit</dd>
+              </div>
+              <div class="price-row">
+                <dt>Standards</dt>
+                <dd>NIS2, ISO/IEC 27001, SOC 2, EU AI Act</dd>
+              </div>
+              <div class="price-row">
+                <dt>Hosting</dt>
+                <dd>Your server, or Azure Functions</dd>
+              </div>
+              <div class="price-row">
+                <dt>Storage</dt>
+                <dd>Your disk, or your Blob Storage</dd>
+              </div>
+              <div class="price-row">
+                <dt>Updates</dt>
+                <dd>Pull the image when you want a new version</dd>
+              </div>
+              <div class="price-row">
+                <dt>Payment</dt>
+                <dd>None. No checkout is connected.</dd>
+              </div>
+              <div class="price-row">
+                <dt>Support</dt>
+                <dd>Community support through GitHub</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="price-note-row">
+            <p class="price-note">
+              This page describes the preview. If a paid hosted service exists later, its price and
+              terms will be published here before anything is charged.
+            </p>
+            <span class="price-note">No card. No checkout.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="pricing-section">
+        <div class="wrap">
+          <h2>What is not included</h2>
+          <p>
+            A low price is only useful if the gaps are visible. These are the parts Comply does not
+            sell or provide today.
+          </p>
+          <dl class="plain-list">
+            <div>
+              <dt>A hosted service</dt>
+              <dd>There is no Comply cloud to sign up for. You run the container.</dd>
+            </div>
+            <div>
+              <dt>A support contract</dt>
+              <dd>No SLA, no named support engineer, and no phone line.</dd>
+            </div>
+            <div>
+              <dt>Certification</dt>
+              <dd>Comply records evidence. It does not certify you or issue an audit opinion.</dd>
+            </div>
+            <div>
+              <dt>Legal advice</dt>
+              <dd>The library points to the official texts. Your auditor and counsel decide what applies.</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="pricing-section">
+        <div class="wrap">
+          <h2>The product behind the price.</h2>
+          <p>
+            One container runs the board, the evidence, the MCP endpoint, and the trust page. These
+            are screenshots from the demo workspace, not renders.
+          </p>
+          <div class="product-strip" data-reveal>
+            <figure>
+              <img src="assets/img/board.jpg" width="2400" height="1650" alt="The NIS2 assessment board with requirement rows, evidence, and conclusions." loading="lazy" />
+              <figcaption>Assessment board</figcaption>
+            </figure>
+            <figure>
+              <img src="assets/img/evidence.jpg" width="929" height="1200" alt="One requirement with three evidence files and a written conclusion." loading="lazy" />
+              <figcaption>Evidence and conclusion</figcaption>
+            </figure>
+            <figure>
+              <img src="assets/img/trust-page.jpg" width="2400" height="1650" alt="The public trust center with published controls and subprocessors." loading="lazy" />
+              <figcaption>Public trust center</figcaption>
+            </figure>
+            <figure>
+              <img src="assets/img/dashboard.jpg" width="2000" height="221" alt="Dashboard summary of active boards, coverage, and open gaps." loading="lazy" />
+              <figcaption>Coverage dashboard</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="pricing-section">
+        <div class="wrap faq">
+          <div class="faq-intro" data-reveal>
+            <h2>Questions about the price</h2>
+            <p>
+              The short answers. If one is missing, open an issue on GitHub and it will be added here.
+            </p>
+          </div>
+          <div class="faq-list">
+            <details class="faq-item" data-reveal>
+              <summary>Is it really free?</summary>
+              <p>
+                Yes, during preview. There is no checkout, no card field, and no trial timer. Pull
+                the image and run it.
+              </p>
+            </details>
+            <details class="faq-item" data-reveal>
+              <summary>What happens after the preview?</summary>
+              <p>
+                Self-hosted installs keep working. If a managed or paid edition appears, it will be
+                announced with its price before any charge. Nothing on this site takes payment now.
+              </p>
+            </details>
+            <details class="faq-item" data-reveal>
+              <summary>Do I need Docker?</summary>
+              <p>
+                For the installer, yes: Docker Engine 24+ with Compose v2, and Python 3.8+. The app
+                itself is one container. Azure Functions is the other supported runtime.
+              </p>
+            </details>
+            <details class="faq-item" data-reveal>
+              <summary>Where does the audit data live?</summary>
+              <p>
+                In the data directory you mount, or in your Blob Storage when configured. The
+                maintainers do not receive it.
+              </p>
+            </details>
+            <details class="faq-item" data-reveal>
+              <summary>Can I use my own agent?</summary>
+              <p>
+                Yes. Any MCP client can connect with a tenant-bound key: Claude, Copilot, Cursor, or
+                a harness you built. The key contains the tenant.
+              </p>
+            </details>
+            <details class="faq-item" data-reveal>
+              <summary>Does Comply make us compliant?</summary>
+              <p>
+                No. It keeps the requirement, the evidence, and the conclusion in one record. Your
+                auditor decides whether that record is enough.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section class="band" aria-labelledby="pricing-cta">
+        <div class="wrap band-grid">
+          <div data-reveal>
+            <h2 id="pricing-cta">Start with the prompt.</h2>
+            <p class="band-lead">
+              Paste it into your agent. It installs Comply on a server you control.
+            </p>
+          </div>
+          <div data-reveal data-delay="1">
+            <div class="band-actions">
+              <button class="btn btn--light" type="button" data-copy-prompt data-copy-status="pricing-copy-status">
+                Copy setup prompt
+              </button>
+              <a class="btn btn--secondary" href="support.html#setup">Read the setup guide</a>
+            </div>
+            <p class="copy-status" id="pricing-copy-status" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="footer-top">
+          <div class="footer-brand" data-reveal>
+            <a class="brand" href="index.html" aria-label="Comply home">
+              <span class="brand-mark">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l8 3v6c0 4.8-3.4 8-8 9-4.6-1-8-4.2-8-9V6z" />
+                  <path d="M9 12l2 2 4-4.2" />
+                </svg>
+              </span>
+              <span class="brand-name">Comply</span>
+            </a>
+            <p>
+              Audit evidence software for NIS2, ISO/IEC 27001, SOC 2, and the EU AI Act. It records evidence;
+              it does not certify compliance.
+            </p>
+          </div>
+
+          <div class="footer-col" data-reveal>
+            <h3>Product</h3>
+            <ul>
+              <li><a href="index.html#product">How it works</a></li>
+              <li><a href="index.html#agent">Agent and MCP</a></li>
+              <li><a href="pricing.html">Pricing</a></li>
+              <li><a href="#" data-site-link="signin">Sign in</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col" data-reveal>
+            <h3>Resources</h3>
+            <ul>
+              <li><a href="support.html">Support</a></li>
+              <li><a href="support.html#setup">Install</a></li>
+              <li><a href="#" data-site-link="docs">API docs</a></li>
+              <li><a href="#" data-site-link="repo">GitHub</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col" data-reveal>
+            <h3>Legal</h3>
+            <ul>
+              <li><a href="privacy.html">Privacy</a></li>
+              <li><a href="terms.html">Terms</a></li>
+              <li><a href="support.html#contact">Contact</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer-word" aria-hidden="true" data-reveal>Comply</div>
+        <div class="footer-bottom">
+          <span>© <span data-current-year>2026</span> Comply</span>
+          <span>Built to run inside your environment.</span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

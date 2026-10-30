@@ -1,0 +1,2 @@
+# Local parameter files carry secrets (postgres password, auth secret). Never commit them.
+*.parameters.json

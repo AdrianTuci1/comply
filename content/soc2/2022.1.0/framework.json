@@ -1,0 +1,10 @@
+{
+  "id": "soc2/2022.1.0",
+  "frameworkId": "soc2",
+  "version": "2022.1.0",
+  "docType": "framework",
+  "title": "SOC 2 Trust Services Criteria",
+  "effectiveFrom": "2022-01-01",
+  "source": "AICPA Trust Services Criteria (2017, revised 2022)",
+  "license": "proprietary"
+}

@@ -1,38 +1,223 @@
-# Azure deployment
+# Azure deployment (split hosting)
 
-One Function App serves the Angular build, `/api`, `/mcp`, and `/healthz`. Storage is a
-private Blob container. The Function App reads and writes its data directory under
-`/home/data`; for a multi-instance deployment move sessions and assessments to Cosmos DB
-or Blob state.
+The deployment has three independent pieces:
+
+| Piece | Resource | Serves |
+| --- | --- | --- |
+| API + MCP | Linux **.NET 8 isolated** Function App (`DOTNET-ISOLATED\|8.0`) | `/api/*`, `/mcp`, `/healthz` |
+| State | **PostgreSQL Flexible Server 16**, database `comply` | users, assessments, requirements, evidence, MCP keys |
+| UI | **Azure Static Web App** (Free or Standard) | the Angular build only |
+
+The Static Web App is not linked to the Function App. The browser loads the bundle from the
+static host and calls the Function App cross-origin; `config.js` holds the API origin and
+`COMPLY_APP_URL` is the CORS allowlist. Nothing is proxied, so the Angular deployment is
+cacheable and can move to a CDN or another static host without touching the API.
+
+`main.bicep` creates:
+
+- a `Standard_LRS` storage account (Functions host state) with a private `comply` blob container;
+- a `Y1` Linux consumption plan and the Function App on the .NET 8 isolated worker;
+- a Burstable `Standard_B1ms` PostgreSQL 16 server with 32 GB storage, 7-day backups, zone
+  redundancy disabled, the `comply` database and the `AllowAzureServices` firewall rule
+  (`0.0.0.0`–`0.0.0.0`);
+- a Static Web App with an empty site, ready for `swa deploy`.
+
+All names are deterministic: `uniqueString(resourceGroup().id)` is appended to `appName`.
+
+## Prerequisites
+
+- Azure CLI 2.50+ with the Bicep CLI (`az bicep install`); `az bicep version` must succeed.
+- Contributor on the resource group: the template reads the storage account keys
+  (`listKeys`) to build `AzureWebJobsStorage` and `COMPLY_BLOB_CONNECTION_STRING`.
+- An existing resource group in a region that offers PostgreSQL Flexible Server 16.
+- The `Microsoft.Web` and `Microsoft.DBforPostgreSQL` providers registered in the subscription
+  (`az provider register -n Microsoft.DBforPostgreSQL`).
+- The Static Web App **Free** SKU is only available in a few regions. The default
+  `staticSiteLocation` is `westeurope`; use `Standard` if the site must live elsewhere.
+- A session secret: `openssl rand -hex 32`.
+- A PostgreSQL administrator password (8+ characters, three of uppercase, lowercase, digits,
+  symbols). Pass it as a `@secure()` parameter; it is never written into the template.
+
+## Deploy
 
 ```bash
 az group create -n comply-rg -l westeurope
+
 az deployment group create -g comply-rg -f infra/bicep/main.bicep \
   -p authSecret="$COMPLY_AUTH_SECRET" \
-  -p publicUrl="https://comply.azurewebsites.net"
+  -p postgresAdminPassword="$COMPLY_POSTGRES_PASSWORD"
 ```
 
-Build the deployment package:
+All parameters with their defaults:
+
+| Parameter | Default | Purpose |
+| --- | --- | --- |
+| `appName` | `comply` | Prefix for every resource name (3–11 characters) |
+| `location` | resource group location | Function App, storage account, PostgreSQL |
+| `publicUrl` | Static Web App URL | Public Angular origin: sign-in redirects and the CORS allowlist |
+| `apiUrl` | `https://<function-app>.azurewebsites.net` | Public API origin used for OIDC `redirect_uri` |
+| `authSecret` | — (required, secure) | HMAC key for sessions, magic links and OIDC state |
+| `postgresAdminLogin` | `complyadmin` | PostgreSQL administrator login |
+| `postgresAdminPassword` | — (required, secure) | PostgreSQL administrator password |
+| `staticSiteLocation` | `westeurope` | Static Web App region |
+| `staticSiteSku` | `Free` | `Free` or `Standard` |
+| `oidcGoogleClientId` / `...Secret` | empty | Google sign-in |
+| `oidcMicrosoftClientId` / `...Secret` | empty | Microsoft Entra ID sign-in |
+| `oidcMicrosoftTenant` | `common` | Entra tenant: `common`, `organizations`, `consumers`, tenant id |
+| `oidcGithubClientId` / `...Secret` | empty | GitHub sign-in |
+| `mailWebhookUrl` | empty | Magic-link delivery webhook |
+
+A parameter file keeps the secrets out of your shell history:
+
+```json
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "authSecret": { "value": "<openssl rand -hex 32>" },
+    "postgresAdminPassword": { "value": "<strong password>" },
+    "publicUrl": { "value": "https://comply.example.com" },
+    "oidcMicrosoftClientId": { "value": "<client id>" },
+    "oidcMicrosoftClientSecret": { "value": "<client secret>" },
+    "oidcMicrosoftTenant": { "value": "<tenant id>" }
+  }
+}
+```
 
 ```bash
-cd src/web && npm run build && cd ../..
-node tools/build-functions.mjs
-cd dist/azure
-npm install --omit=dev
-func azure functionapp publish <function-app-name>
+az deployment group create -g comply-rg -f infra/bicep/main.bicep \
+  -p @infra/bicep/env/prod.parameters.json
 ```
 
-Register these callback URLs with each identity provider:
+Set `COMPLY_AUTH_SECRET` and `COMPLY_POSTGRES_PASSWORD` in the shell before the inline
+`-p` variant, or use the parameter file. Never commit a parameter file that contains them;
+`infra/bicep/env/` is for local, git-ignored files.
+
+The outputs are printed at the end of the deployment:
+
+```bash
+az deployment group show -g comply-rg -n main \
+  --query properties.outputs -o json
+
+# functionAppName, functionUrl, apiUrl, staticSiteName, staticSiteUrl,
+# postgresHost, postgresDatabase, blobEndpoint, blobContainer
+```
+
+## Deploy the API
+
+`WEBSITE_RUN_FROM_PACKAGE=1` means the Function App runs a zip package. Build it with the SDK
+container (no local SDK required) and upload it:
+
+```bash
+cd apps/api-dotnet
+docker run --rm -v "$PWD/../..":/src -w /src/apps/api-dotnet \
+  mcr.microsoft.com/dotnet/sdk:8.0 \
+  dotnet publish src/Comply.Functions/Comply.Functions.csproj -c Release -o out
+
+(cd out && zip -r ../comply-functions.zip .)
+
+az functionapp deployment source config-zip -g comply-rg -n <function-app-name> \
+  --src comply-functions.zip
+```
+
+`func azure functionapp publish <function-app-name> --dotnet-isolated` from
+`apps/api-dotnet/src/Comply.Functions` works as well.
+
+Migrations run at worker startup because `COMPLY_DB_MIGRATE=1`. **The database must be
+reachable when the Function App starts.** If the firewall rule is missing, the server is still
+provisioning, or the password is wrong, startup fails and every request returns `503` until the
+app is restarted. Apply the firewall rule before the first deployment, and re-check the logs with
+`az webapp log tail -g comply-rg -n <function-app-name>` when `/healthz` does not answer.
+
+## Deploy the Angular build
+
+`config.js` must point at the Function App before upload. `/api` is not proxied by the static
+host, so an empty `apiBase` would send requests to the Static Web App origin.
+
+```bash
+cd apps/web
+npm ci
+npm run build                       # outputs dist/web/browser
+
+cat > dist/web/browser/config.js <<'EOF'
+globalThis.COMPLY_CONFIG = { apiBase: 'https://<function-app>.azurewebsites.net' };
+EOF
+```
+
+Upload with the Static Web Apps CLI (the deployment token is on the Static Web App resource):
+
+```bash
+npm install -g @azure/static-web-apps-cli
+
+az staticwebapp secrets list -g comply-rg -n <static-site-name> \
+  --query properties.apiKey -o tsv
+
+swa deploy ./dist/web/browser \
+  --deployment-token <token> \
+  --env production
+```
+
+The GitHub action is equivalent and is what `.github/workflows/dotnet.yml` uses when the
+optional deploy job is enabled:
+
+```yaml
+- uses: Azure/static-web-apps-deploy@v1
+  with:
+    azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+    action: upload
+    app_location: apps/web
+    output_location: dist/web/browser
+```
+
+Because the Static Web App is not linked to the API, `/api` on the static host returns `404`.
+That is expected: the browser talks to `apiBase` directly. If a custom domain is added in front
+of the Static Web App, set `COMPLY_APP_URL` (CORS allowlist and sign-in redirect target) to that
+origin and redeploy the app settings; the .NET worker has no `COMPLY_CORS_ORIGINS` setting and
+uses `COMPLY_APP_URL` as the allowlist.
+
+## Register OIDC callback URLs
+
+Register these on each provider. The host is the API host (`functionUrl` output), not the
+Static Web App:
 
 ```
-https://<function-app>/api/auth/oidc/google/callback
-https://<function-app>/api/auth/oidc/microsoft/callback
-https://<function-app>/api/auth/oidc/github/callback
+https://<function-app>.azurewebsites.net/api/auth/oidc/google/callback
+https://<function-app>.azurewebsites.net/api/auth/oidc/microsoft/callback
+https://<function-app>.azurewebsites.net/api/auth/oidc/github/callback
+https://<function-app>.azurewebsites.net/api/auth/oidc/<COMPLY_OIDC_ID>/callback
 ```
 
-Set the client id and secret for each provider as app settings. The providers appear on the
-sign-in page only when both values exist.
+A custom `apiUrl` must be the same host that the providers have registered, including the
+scheme; `COMPLY_PUBLIC_URL` builds the `redirect_uri` from it.
 
-Blob access stays private. The container is created with `publicAccess: None`; the API
-serves captured documents through authenticated routes and can issue short-lived SAS
-links when `COMPLY_BLOB_CONNECTION_STRING` is set.
+## Post-deploy checks
+
+```bash
+curl -fsS https://<function-app>.azurewebsites.net/healthz
+curl -fsS https://<function-app>.azurewebsites.net/api/frameworks
+curl -fsS https://<function-app>.azurewebsites.net/api/auth/providers
+
+curl -fsS https://<static-site>.azurewebsites.net/
+curl -fsS https://<static-site>.azurewebsites.net/config.js
+
+curl -i -X OPTIONS https://<function-app>.azurewebsites.net/api/auth/providers \
+  -H 'Origin: https://<static-site>.azurewebsites.net' \
+  -H 'Access-Control-Request-Method: GET'
+```
+
+The preflight must echo the origin; if it does not, `COMPLY_APP_URL` does not match the Angular
+origin exactly.
+
+## Notes and limits
+
+- The Functions host storage account is separate from PostgreSQL: the host needs it for its own
+  state even though every trigger is HTTP.
+- `COMPLY_DATA_DIR=/home/data` is per instance. Content comes from the packaged
+  `COMPLY_SEED_DIR=/home/site/wwwroot/seed`. Anything that must survive a scale-out belongs in
+  PostgreSQL or the blob container.
+- The `comply` blob container is private (`publicAccess: None`). The .NET worker does not read
+  the blob settings yet; they are set for parity with the Node deployment.
+- The PostgreSQL firewall rule allows Azure services only. To connect from a workstation, add
+  your own IP with `az postgres flexible-server firewall-rule create`.
+- Backups are retained for 7 days. Zone-redundant high availability is off to keep the B1ms
+  cost; enable it in the template for production criticality.

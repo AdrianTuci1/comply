@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Comply | Audit evidence, kept in one board</title>
+    <meta
+      name="description"
+      content="Self-hosted audit evidence for NIS2, ISO/IEC 27001, SOC 2, and the EU AI Act. One board, one record per requirement, evidence attached."
+    />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="assets/fonts/stack-sans-text.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="assets/fonts/stack-sans-headline.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="assets/site.css" />
+    <script src="assets/config.js"></script>
+    <script src="assets/site.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="wrap header-inner">
+        <a class="brand" href="index.html" aria-label="Comply home">
+          <span class="brand-mark">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l8 3v6c0 4.8-3.4 8-8 9-4.6-1-8-4.2-8-9V6z" />
+              <path d="M9 12l2 2 4-4.2" />
+            </svg>
+          </span>
+          <span class="brand-name">Comply</span>
+        </a>
+
+        <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav">
+          Menu
+        </button>
+
+        <nav class="site-nav" id="site-nav" aria-label="Primary">
+          <a href="#features">Features</a>
+          <a href="#frameworks">Frameworks</a>
+          <a href="#" data-site-link="docs">Docs</a>
+          <a href="#" data-site-link="repo">GitHub</a>
+          <a href="#" data-site-link="signin">Sign in</a>
+          <a class="btn btn--primary btn--small" href="#quickstart">Install</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero hero--compact">
+        <div class="wrap">
+          <div class="hero-copy">
+            <h1 data-reveal>Audit evidence,<br />kept in one board.</h1>
+            <p class="hero-sub" data-reveal data-delay="1">
+              Comply is a self-hosted workspace for NIS2, ISO/IEC 27001, SOC 2, and EU AI Act
+              evidence. Each requirement keeps its reference, owner, evidence, and conclusion.
+            </p>
+            <div class="hero-actions" data-reveal data-delay="2">
+              <a class="btn btn--primary" href="#quickstart">Get started</a>
+              <a class="btn btn--secondary" href="#" data-site-link="repo">View on GitHub</a>
+            </div>
+            <button
+              class="agent-line"
+              type="button"
+              data-copy-prompt
+              data-copy-status="hero-copy-status"
+              aria-label="Copy the setup prompt for your agent"
+            >
+              <span class="agent-line__sign">$</span>
+              <span>Set up with your agent</span>
+              <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="11" height="11" rx="2" />
+                <path d="M15 5.5A2.5 2.5 0 0 0 12.5 3h-7A2.5 2.5 0 0 0 3 5.5v7A2.5 2.5 0 0 0 5.5 15" />
+              </svg>
+            </button>
+            <p class="copy-status" id="hero-copy-status" role="status" aria-live="polite"></p>
+            <p class="hero-meta" data-reveal data-delay="3">
+              Docker Engine 24+ · Compose v2 · Python 3.8+ · MCP endpoint included
+            </p>
+          </div>
+
+          <figure class="hero-media">
+            <div class="media-stage hero-shot">
+              <img
+                src="assets/img/trust-page.jpg"
+                width="2400"
+                height="1650"
+                alt="The public Comply trust center: the organization header, NIS2, ISO 27001, SOC 2 and EU AI Act status, published controls with their evidence, and the subprocessor list."
+                fetchpriority="high"
+              />
+            </div>
+            <figcaption class="media-caption">
+              The public trust center from the demo workspace. Names and controls are sample data.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section section--tight" id="features">
+        <div class="wrap">
+          <div class="section-head" data-reveal>
+            <h2>What it does</h2>
+            <p class="section-lead">
+              A requirement, its evidence, and the decision stay in one record. The library is
+              managed; your conclusions are yours.
+            </p>
+          </div>
+
+          <div class="feature-grid">
+            <article data-reveal>
+              <h3>Requirements</h3>
+              <p>
+                1,569 records across NIS2, ISO/IEC 27001 Annex A, SOC 2, and the EU AI Act, with
+                references that point back to the source.
+              </p>
+            </article>
+            <article data-reveal data-delay="1">
+              <h3>Evidence</h3>
+              <p>
+                Files, links, and screenshots attach to the requirement they support. Review status
+                and history stay on the record.
+              </p>
+            </article>
+            <article data-reveal data-delay="2">
+              <h3>Agent</h3>
+              <p>
+                Connect any MCP client with a tenant-bound key. The agent asks in the user's
+                language and writes the canonical answer in English.
+              </p>
+            </article>
+          </div>
+
+          <div class="shot-grid" data-reveal data-delay="1">
+            <figure>
+              <img
+                src="assets/img/board.jpg"
+                width="2400"
+                height="1650"
+                alt="The assessment board with requirement rows, attached evidence, and conclusions."
+                loading="lazy"
+              />
+              <figcaption>Assessment board</figcaption>
+            </figure>
+            <figure>
+              <img
+                src="assets/img/evidence.jpg"
+                width="929"
+                height="1200"
+                alt="A requirement with three evidence files and a written conclusion."
+                loading="lazy"
+              />
+              <figcaption>Evidence and conclusion</figcaption>
+            </figure>
+          </div>
+
+          <figure class="shot-wide" data-reveal data-delay="2">
+            <img
+              src="assets/img/dashboard.jpg"
+              width="2000"
+              height="221"
+              alt="Dashboard summary of active boards, coverage, and open gaps."
+              loading="lazy"
+            />
+            <figcaption>Coverage dashboard</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section section--tight" id="quickstart">
+        <div class="wrap split">
+          <div class="split__copy" data-reveal>
+            <h2>Quick start</h2>
+            <p>
+              Run one container on a server you control. The installer writes the Compose project,
+              pulls the image, and waits for the health check.
+            </p>
+            <ol class="steps">
+              <li>
+                <div>
+                  <strong>Run the installer.</strong>
+                  <span>Docker Engine 24+ with Compose v2, and Python 3.8+.</span>
+                </div>
+              </li>
+              <li>
+                <div>
+                  <strong>Open the URL.</strong>
+                  <span>The first account becomes the administrator.</span>
+                </div>
+              </li>
+              <li>
+                <div>
+                  <strong>Connect your agent.</strong>
+                  <span>Create a tenant-bound key and point any MCP client at <span class="term">/mcp</span>.</span>
+                </div>
+              </li>
+            </ol>
+            <p class="quickstart-links">
+              <a class="text-link" href="#" data-site-link="docs">Documentation</a>
+              <a class="text-link" href="#" data-site-link="support">Support</a>
+              <a class="text-link" href="pricing.html">Pricing</a>
+            </p>
+          </div>
+
+          <div data-reveal data-delay="1">
+            <div class="prompt">
+              <div class="prompt__bar">
+                <span>Shell</span>
+              </div>
+              <pre><code>curl -fsSLO https://raw.githubusercontent.com/AdrianTuci1/comply/main/easy-install.py
+python3 easy-install.py deploy --sitename=comply.example.com</code></pre>
+              <p class="prompt-note">
+                The installer stops at a health check. Open the URL and create the first account.
+                For an agent-assisted install, use the setup prompt on the
+                <a href="support.html#setup">support page</a>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--tight" id="frameworks">
+        <div class="wrap frameworks">
+          <div class="section-head" data-reveal>
+            <h2>Frameworks</h2>
+            <p class="section-lead">
+              One board per framework, or one control set mapped across several. The library is
+              read-only; the conclusions are yours.
+            </p>
+          </div>
+
+          <div data-reveal data-delay="1">
+            <table class="framework-table">
+              <caption>Requirement sets in the managed library, 30 October 2026.</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Framework</th>
+                  <th scope="col">Official source</th>
+                  <th scope="col">Records</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>NIS2</td>
+                  <td class="ref">Directive (EU) 2022/2555</td>
+                  <td>409</td>
+                </tr>
+                <tr>
+                  <td>ISO/IEC 27001</td>
+                  <td class="ref">ISO/IEC 27001:2022, Annex A</td>
+                  <td>93</td>
+                </tr>
+                <tr>
+                  <td>SOC 2</td>
+                  <td class="ref">AICPA Trust Services Criteria</td>
+                  <td>61</td>
+                </tr>
+                <tr>
+                  <td>EU AI Act</td>
+                  <td class="ref">Regulation (EU) 2024/1689</td>
+                  <td>1,006</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="framework-note">
+              ISO/IEC 27001 covers Annex A controls. SOC 2 is a 61-criterion starter set based on
+              the AICPA Trust Services Criteria. Licensed standards are summarized; verify them
+              against the copy you own.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="footer-top">
+          <div class="footer-brand" data-reveal>
+            <a class="brand" href="index.html" aria-label="Comply home">
+              <span class="brand-mark">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l8 3v6c0 4.8-3.4 8-8 9-4.6-1-8-4.2-8-9V6z" />
+                  <path d="M9 12l2 2 4-4.2" />
+                </svg>
+              </span>
+              <span class="brand-name">Comply</span>
+            </a>
+            <p>
+              Self-hosted audit evidence for NIS2, ISO/IEC 27001, SOC 2, and the EU AI Act. It
+              records evidence; it does not certify compliance.
+            </p>
+          </div>
+
+          <div class="footer-col" data-reveal>
+            <h3>Project</h3>
+            <ul>
+              <li><a href="#features">Features</a></li>
+              <li><a href="#quickstart">Install</a></li>
+              <li><a href="#frameworks">Frameworks</a></li>
+              <li><a href="#" data-site-link="repo">GitHub</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col" data-reveal>
+            <h3>Docs</h3>
+            <ul>
+              <li><a href="#" data-site-link="docs">Documentation</a></li>
+              <li><a href="#" data-site-link="support">Support</a></li>
+              <li><a href="pricing.html">Pricing</a></li>
+              <li><a href="#" data-site-link="signin">Sign in</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col" data-reveal>
+            <h3>Legal</h3>
+            <ul>
+              <li><a href="privacy.html">Privacy</a></li>
+              <li><a href="terms.html">Terms</a></li>
+              <li><a href="support.html#contact">Contact</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <span>© <span data-current-year>2026</span> Comply</span>
+          <span>Self-hosted. Source on GitHub.</span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,138 @@
+# Split-hosting CI: Angular build, .NET build/tests, and the Functions container image.
+# Both workflows run only through `gh workflow run` (workflow_dispatch).
+#
+# The deploy job only runs on workflow_dispatch with "deploy" enabled. It needs these
+# repository secrets:
+#
+#   AZURE_CREDENTIALS                 Service principal JSON for azure/login@v2
+#                                     (az ad sp create-for-rbac --sdk-auth --role contributor)
+#   FUNCTION_APP_NAME                 Function App name from the Bicep outputs
+#   AZURE_STATIC_WEB_APPS_API_TOKEN   Static Web App deployment token
+#                                     (az staticwebapp secrets list --query properties.apiKey)
+#   PUBLIC_API_URL                    Function App origin, written into config.js apiBase
+#
+# Register the OIDC callback URLs on the API host after the first deployment; see
+# infra/bicep/README.md.
+name: dotnet
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy the API and the Angular build to Azure
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    name: Angular build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install and build
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: angular
+          path: apps/web/dist/web/browser
+          retention-days: 7
+
+  dotnet:
+    name: .NET build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # .NET is not installed on the runner image; build in the SDK container like the local
+      # workflow does, so the CI and the developer machine use the same toolchain.
+      - name: Build and test in the SDK container
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE":/src \
+            -w /src/apps/api-dotnet \
+            mcr.microsoft.com/dotnet/sdk:8.0 \
+            bash -lc 'dotnet build --configuration Release && dotnet test --configuration Release'
+
+  image:
+    name: Functions image
+    runs-on: ubuntu-latest
+    needs: dotnet
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build the Linux amd64 Functions image
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            -f apps/api-dotnet/Dockerfile \
+            -t comply-functions:ci \
+            apps/api-dotnet
+
+  deploy:
+    name: Deploy to Azure
+    runs-on: ubuntu-latest
+    needs: [web, dotnet]
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish and zip the Function App
+        run: |
+          dotnet publish apps/api-dotnet/src/Comply.Functions/Comply.Functions.csproj \
+            --configuration Release --output functions-out
+          (cd functions-out && zip -r ../comply-functions.zip .)
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy the Function App package
+        uses: azure/functions-action@v1
+        with:
+          app-name: ${{ secrets.FUNCTION_APP_NAME }}
+          package: comply-functions.zip
+          scm-do-build-during-deployment: false
+          enable-oryx-build: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: angular
+          path: web-dist
+
+      # config.js is not part of the bundle; it carries the API origin for the split host.
+      - name: Point config.js at the Function App
+        run: |
+          cat > web-dist/config.js <<EOF
+          globalThis.COMPLY_CONFIG = { apiBase: '${{ secrets.PUBLIC_API_URL }}' };
+          EOF
+
+      - name: Deploy the Angular build
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          app_location: web-dist
+          api_location: ''
+          output_location: ''
+          skip_app_build: true

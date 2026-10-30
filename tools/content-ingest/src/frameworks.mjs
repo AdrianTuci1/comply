@@ -75,6 +75,15 @@ function aiActTheme(ref) {
   return 'Guvernanța AI';
 }
 
+function soc2Theme(ref) {
+  if (/^CC/.test(ref)) return 'Guvernanță și risc';
+  if (/^A/.test(ref)) return 'Disponibilitate';
+  if (/^PI/.test(ref)) return 'Integritatea procesării';
+  if (/^C/.test(ref)) return 'Confidențialitate';
+  if (/^P/.test(ref)) return 'Confidențialitate și date personale';
+  return 'Criterii SOC 2';
+}
+
 /** Common shape of a heading rule. */
 const articleHeading = (prefixes) => ({
   kind: 'article',
@@ -145,6 +154,30 @@ export const FRAMEWORKS = {
     paragraphPattern: /^(\d{1,2})\.\s+(.+)$/,
     letterPattern: /^\(([a-z])\)\s+(.+)$/i,
     themeFor: ({ ref }) => aiActTheme(ref),
+    defaultEvidence: 'document',
+    defaultCadence: 'annual',
+    minText: 20,
+    maxText: 2000,
+  },
+
+  soc2: {
+    id: 'soc2',
+    label: 'SOC 2',
+    dir: 'soc2',
+    defaultVersion: '2022.1.0',
+    license: 'proprietary',
+    defaultSource: 'AICPA Trust Services Criteria (2017, revised 2022)',
+    headings: [
+      {
+        kind: 'criterion',
+        pattern: /^(CC\d{1,2}\.\d{1,2}|PI\d{1,2}\.\d{1,2}|A\d{1,2}\.\d{1,2}|C\d{1,2}\.\d{1,2}|P\d{1,2}\.\d{1,2})\s+(\S.{2,})$/i,
+        ref: (match) => match[1].toUpperCase(),
+        title: (match) => match[2].trim(),
+      },
+    ],
+    paragraphPattern: null,
+    letterPattern: null,
+    themeFor: ({ ref }) => soc2Theme(ref),
     defaultEvidence: 'document',
     defaultCadence: 'annual',
     minText: 20,

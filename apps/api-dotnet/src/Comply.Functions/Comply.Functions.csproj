@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <RootNamespace>Comply.Functions</RootNamespace>
+    <AssemblyName>Comply.Functions</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.52.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.23.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
+  </ItemGroup>
+
+  <!-- The MCP tool contract is embedded so tools/list cannot drift from
+       contracts/mcp/tools.json; Agent/tools.json is a byte copy of that file. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Agent/tools.json" LogicalName="Comply.Functions.Agent.tools.json" />
+  </ItemGroup>
+
+  <!-- The seed content ships with the app so a fresh Function App can answer before data/ exists.
+       The Docker build context is this directory, so the repository seed is optional there. -->
+  <ItemGroup Condition="Exists('../../../../apps/api-node/seed')">
+    <Content Include="../../../../apps/api-node/seed/**/*.json"
+             Link="seed/%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

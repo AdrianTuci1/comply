@@ -24,4 +24,4 @@ node tools/content-ingest/cli.mjs promote \
 ```
 
 Doar cerințele promovate ajung în bundle-ul public. Fluxul complet, inclusiv regulile
-pentru surse licențiate și testul cu Docker, este în `.agents/content-pipeline.md`.
+pentru surse licențiate și testul cu Docker, este în `docs/agents/content-pipeline.md`.

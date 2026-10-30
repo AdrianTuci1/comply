@@ -123,23 +123,23 @@ dashboard reads this state through:
 
 ## Tools
 
-| Tool                   | Purpose                                                      |
-| ---------------------- | ------------------------------------------------------------ |
-| `get_agent_guide`      | Workflow, rules, and language policy                         |
-| `start_assessment`     | Create an assessment for `nis2`, `iso27001`, or `ai-act`     |
-| `list_assessments`     | Reconnect to a previous run                                  |
-| `get_assessment_state` | Phase, progress, blockers, next actions                      |
-| `set_scope`            | English scope and period                                     |
-| `get_brief`            | Up to five prioritized requirements and questions            |
-| `list_requirements`    | Paginated checklist with filters                             |
-| `search_requirements`  | Similarity search by query or by another requirement         |
-| `get_progress`         | Status and theme progress, remaining work, and next action   |
-| `get_requirement`      | Requirement text, existing evidence, and the question to ask |
-| `submit_evidence`      | Artifact with English summary, citation, and SHA-256         |
-| `complete_requirement` | English conclusion; requires at least one artifact           |
-| `mark_not_applicable`  | English reason for an out-of-scope requirement               |
-| `review_assessment`    | Blocked while any requirement is open                        |
-| `export_assessment`    | English package with manifest hash                           |
+| Tool                   | Purpose                                                          |
+| ---------------------- | ---------------------------------------------------------------- |
+| `get_agent_guide`      | Workflow, rules, and language policy                             |
+| `start_assessment`     | Create an assessment for `nis2`, `iso27001`, `ai-act`, or `soc2` |
+| `list_assessments`     | Reconnect to a previous run                                      |
+| `get_assessment_state` | Phase, progress, blockers, next actions                          |
+| `set_scope`            | English scope and period                                         |
+| `get_brief`            | Up to five prioritized requirements and questions                |
+| `list_requirements`    | Paginated checklist with filters                                 |
+| `search_requirements`  | Similarity search by query or by another requirement             |
+| `get_progress`         | Status and theme progress, remaining work, and next action       |
+| `get_requirement`      | Requirement text, existing evidence, and the question to ask     |
+| `submit_evidence`      | Artifact with English summary, citation, and SHA-256             |
+| `complete_requirement` | English conclusion; requires at least one artifact               |
+| `mark_not_applicable`  | English reason for an out-of-scope requirement                   |
+| `review_assessment`    | Blocked while any requirement is open                            |
+| `export_assessment`    | English package with manifest hash                               |
 
 ## Pagination, search, and progress
 

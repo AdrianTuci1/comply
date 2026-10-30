@@ -1,7 +1,7 @@
 {
   "name": "comply",
   "version": "0.1.0",
-  "description": "Self-hosted audit evidence portal for NIS2, ISO 27001, and the EU AI Act.",
+  "description": "Self-hosted audit evidence portal for NIS2, ISO 27001, the EU AI Act, and SOC 2.",
   "type": "module",
   "bin": {
     "comply": "./bin/comply.mjs"
@@ -19,9 +19,9 @@
     "node": ">=22"
   },
   "scripts": {
-    "start": "node src/server/api/server.mjs",
-    "build": "cd src/web && npm run build",
-    "test": "node --test src/server/api/test/*.test.mjs"
+    "start": "node apps/api-node/server.mjs",
+    "build": "cd apps/web && npm run build",
+    "test": "node --test apps/api-node/test/*.test.mjs"
   },
   "private": false
 }

@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Support | Comply</title>
+    <meta
+      name="description"
+      content="Install Comply, connect an MCP agent, and find the right place to report a problem."
+    />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="assets/fonts/stack-sans-text.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="assets/fonts/stack-sans-headline.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="assets/site.css" />
+    <script src="assets/config.js"></script>
+    <script src="assets/site.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="wrap header-inner">
+        <a class="brand" href="index.html" aria-label="Comply home">
+          <span class="brand-mark">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l8 3v6c0 4.8-3.4 8-8 9-4.6-1-8-4.2-8-9V6z" />
+              <path d="M9 12l2 2 4-4.2" />
+            </svg>
+          </span>
+          <span class="brand-name">Comply</span>
+        </a>
+
+        <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav">
+          Menu
+        </button>
+
+        <nav class="site-nav" id="site-nav" aria-label="Primary">
+          <a href="index.html#product">Product</a>
+          <a href="pricing.html">Pricing</a>
+          <a href="#" data-site-link="docs">Docs</a>
+          <a href="support.html" aria-current="page">Support</a>
+          <a href="#" data-site-link="signin">Sign in</a>
+          <a class="btn btn--primary btn--small" href="#setup">Set up</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="page-head">
+        <div class="wrap">
+          <h1>Support, without a ticket queue.</h1>
+          <p>
+            Install Comply, connect an agent, or open an issue on GitHub. The project is in preview;
+            there is no support contract.
+          </p>
+        </div>
+      </section>
+
+      <section class="section section--tight" id="setup">
+        <div class="wrap setup">
+          <div class="split__copy">
+            <h2>Install Comply.</h2>
+            <p>
+              Give your agent the prompt. It installs Comply on a server you control, waits for the
+              health check, and leaves the first account for you.
+            </p>
+            <ol class="steps">
+              <li>
+                <div>
+                  <strong>Give your agent the prompt.</strong>
+                  <span>Any agent with terminal access can run it.</span>
+                </div>
+              </li>
+              <li>
+                <div>
+                  <strong>It runs the installer.</strong>
+                  <span>Docker Engine 24+ with Compose v2, and Python 3.8+.</span>
+                </div>
+              </li>
+              <li>
+                <div>
+                  <strong>Open the URL and create the first account.</strong>
+                  <span>The first account becomes the administrator. No account is created for you.</span>
+                </div>
+              </li>
+            </ol>
+            <p class="support-more">
+              Prefer to run it yourself? The
+              <a class="text-link" href="https://github.com/AdrianTuci1/comply#one-command-install">README</a>
+              lists the same steps.
+            </p>
+          </div>
+
+          <div class="prompt">
+            <div class="prompt__bar">
+              <span>Setup prompt</span>
+              <button class="prompt__copy" type="button" data-copy-prompt data-copy-status="support-prompt-status">
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="11" height="11" rx="2" />
+                  <path d="M15 5.5A2.5 2.5 0 0 0 12.5 3h-7A2.5 2.5 0 0 0 3 5.5v7A2.5 2.5 0 0 0 5.5 15" />
+                </svg>
+                Copy
+              </button>
+            </div>
+            <pre><code id="setup-prompt">Install Comply on this server.
+
+Requirements: Docker Engine 24+ with Compose v2, and Python 3.8+.
+
+Run:
+curl -fsSLO https://raw.githubusercontent.com/AdrianTuci1/comply/main/easy-install.py
+python3 easy-install.py deploy --sitename=comply.example.com
+
+When it finishes, open the URL and create the first account. That account becomes the administrator. Do not create an account for me.</code></pre>
+            <p class="prompt-status" id="support-prompt-status" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--tight" id="agent">
+        <div class="wrap split">
+          <div class="split__copy">
+            <h2>Connect an agent.</h2>
+            <p>
+              Create a tenant-bound key in <span class="term">Settings → MCP access and API keys</span>.
+              Paste the endpoint and the key into any MCP client. The tenant is encoded in the key, so
+              one client cannot read another tenant's assessment.
+            </p>
+            <p>
+              The agent asks in the user's language. Scope, evidence summaries, and conclusions are
+              stored in English, and the exported package is English.
+            </p>
+            <p>
+              <a class="text-link" href="#" data-site-link="docs">Read the API and MCP reference</a>
+            </p>
+          </div>
+          <div class="prompt">
+            <div class="prompt__bar">
+              <span>MCP client configuration</span>
+            </div>
+            <pre><code>{
+  "mcpServers": {
+    "comply": {
+      "type": "http",
+      "url": "https://comply.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer sk_mcp_&lt;tenant&gt;_&lt;key&gt;"
+      }
+    }
+  }
+}</code></pre>
+            <p class="prompt-status">Replace the host and the key with the values from your deployment.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--tight">
+        <div class="wrap">
+          <h2 data-reveal>What you should see.</h2>
+          <p class="section-lead" data-reveal data-delay="1">
+            After the first account, the workspace opens on the dashboard. The board, the public
+            trust page, and the agent guide run in the same container.
+          </p>
+          <div class="product-strip">
+            <figure data-reveal data-delay="1">
+              <img src="assets/img/board.jpg" width="2400" height="1650" alt="The assessment board with requirement rows." loading="lazy" />
+              <figcaption>Assessment board</figcaption>
+            </figure>
+            <figure data-reveal data-delay="2">
+              <img src="assets/img/evidence.jpg" width="929" height="1200" alt="A requirement with evidence and a conclusion." loading="lazy" />
+              <figcaption>Evidence and conclusion</figcaption>
+            </figure>
+            <figure data-reveal data-delay="2">
+              <img src="assets/img/trust-page.jpg" width="2400" height="1650" alt="The public trust center." loading="lazy" />
+              <figcaption>Public trust center</figcaption>
+            </figure>
+            <figure data-reveal data-delay="3">
+              <img src="assets/img/dashboard.jpg" width="2000" height="221" alt="The coverage dashboard." loading="lazy" />
+              <figcaption>Coverage dashboard</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--tight">
+        <div class="wrap faq">
+          <div class="faq-intro" data-reveal>
+            <h2>Questions</h2>
+            <p>Install, keys, logs, and the trust hostname.</p>
+          </div>
+          <div class="faq-list">
+            <details class="faq-item" data-reveal>
+              <summary>The installer cannot reach the image.</summary>
+              <p>
+                The image is published at <span class="term">ghcr.io/adriantuci1/comply</span>. Check
+                that Docker can pull it anonymously, then run the installer again with
+                <span class="term">--version latest</span>.
+              </p>
+            </details>
+            <details class="faq-item" data-reveal>
+              <summary>I lost the administrator password.</summary>
+              <p>
+                Comply has no email recovery by default. If you still have another administrator
+                account, use it to reset the account. If not, stop the container and use the users
+                file in the data directory with the deployment's own recovery procedure. Keep a copy
+                before you edit it.
+              </p>
+            </details>
+            <details class="faq-item" data-reveal>
+              <summary>Where are the logs?</summary>
+              <p>
+                <span class="term">docker compose logs -f comply</span>. A healthy deployment answers
+                <span class="term">/healthz</span> with a JSON status.
+              </p>
+            </details>
+            <details class="faq-item" data-reveal>
+              <summary>Can I use a custom domain for the trust center?</summary>
+              <p>
+                Yes. Set the trust host when you install, or configure
+                <span class="term">COMPLY_TRUST_HOST</span> and point the DNS record at the same
+                container.
+              </p>
+            </details>
+            <details class="faq-item" data-reveal>
+              <summary>Does Comply phone home?</summary>
+              <p>
+                The application does not send audit content to the maintainers. Content refresh reads
+                the public source documents. The marketing site has no analytics.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--tight" id="contact">
+        <div class="wrap prose">
+          <h2>Contact</h2>
+          <p>
+            For a bug or a question, open an issue in the
+            <a href="#" data-site-link="support">public issue tracker</a>. For a security problem,
+            use the repository's private security advisory instead of a public issue.
+          </p>
+          <p>
+            <a href="https://github.com/AdrianTuci1/comply/security/advisories/new">Report a vulnerability privately</a>
+          </p>
+          <p>
+            There is no support email or phone number during preview. GitHub is the place where
+            reports are read.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="footer-top">
+          <div class="footer-brand" data-reveal>
+            <a class="brand" href="index.html" aria-label="Comply home">
+              <span class="brand-mark">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l8 3v6c0 4.8-3.4 8-8 9-4.6-1-8-4.2-8-9V6z" />
+                  <path d="M9 12l2 2 4-4.2" />
+                </svg>
+              </span>
+              <span class="brand-name">Comply</span>
+            </a>
+            <p>
+              Audit evidence software for NIS2, ISO/IEC 27001, SOC 2, and the EU AI Act. It records evidence;
+              it does not certify compliance.
+            </p>
+          </div>
+
+          <div class="footer-col" data-reveal>
+            <h3>Product</h3>
+            <ul>
+              <li><a href="index.html#product">How it works</a></li>
+              <li><a href="index.html#agent">Agent and MCP</a></li>
+              <li><a href="pricing.html">Pricing</a></li>
+              <li><a href="#" data-site-link="signin">Sign in</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col" data-reveal>
+            <h3>Resources</h3>
+            <ul>
+              <li><a href="support.html" aria-current="page">Support</a></li>
+              <li><a href="support.html#setup">Install</a></li>
+              <li><a href="#" data-site-link="docs">API docs</a></li>
+              <li><a href="#" data-site-link="repo">GitHub</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col" data-reveal>
+            <h3>Legal</h3>
+            <ul>
+              <li><a href="privacy.html">Privacy</a></li>
+              <li><a href="terms.html">Terms</a></li>
+              <li><a href="support.html#contact">Contact</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer-word" aria-hidden="true" data-reveal>Comply</div>
+        <div class="footer-bottom">
+          <span>© <span data-current-year>2026</span> Comply</span>
+          <span>Built to run inside your environment.</span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

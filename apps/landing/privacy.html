@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy | Comply</title>
+    <meta
+      name="description"
+      content="What the Comply marketing site and a self-hosted Comply deployment do with data."
+    />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="assets/fonts/stack-sans-text.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="assets/fonts/stack-sans-headline.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="assets/site.css" />
+    <script src="assets/config.js"></script>
+    <script src="assets/site.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="wrap header-inner">
+        <a class="brand" href="index.html" aria-label="Comply home">
+          <span class="brand-mark">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l8 3v6c0 4.8-3.4 8-8 9-4.6-1-8-4.2-8-9V6z" />
+              <path d="M9 12l2 2 4-4.2" />
+            </svg>
+          </span>
+          <span class="brand-name">Comply</span>
+        </a>
+
+        <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav">
+          Menu
+        </button>
+
+        <nav class="site-nav" id="site-nav" aria-label="Primary">
+          <a href="index.html#product">Product</a>
+          <a href="pricing.html">Pricing</a>
+          <a href="#" data-site-link="docs">Docs</a>
+          <a href="support.html">Support</a>
+          <a href="#" data-site-link="signin">Sign in</a>
+          <a class="btn btn--primary btn--small" href="index.html#setup">Set up</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="page-head">
+        <div class="wrap">
+          <h1>Privacy.</h1>
+          <p>What this website and a self-hosted Comply deployment do with data.</p>
+        </div>
+      </section>
+
+      <section class="wrap prose">
+        <p class="updated">Last updated 29 October 2026.</p>
+
+        <h2>The short version</h2>
+        <p>
+          This marketing site sets no cookies and runs no analytics. Comply is self-hosted software:
+          when you deploy it, the audit data stays in your environment and you decide who can reach
+          it. The maintainers do not receive audit content from a deployment.
+        </p>
+
+        <h2>This website</h2>
+        <p>
+          These pages are static files. Fonts are served from this site, and there is no advertising,
+          tracking script, or third-party embed. The host that serves the pages may keep standard
+          access logs, such as the requested page, the time, and the network address. Those logs are
+          controlled by the host, not by the application.
+        </p>
+        <p>
+          Links to GitHub leave this site. GitHub then handles the request under its own privacy
+          terms.
+        </p>
+
+        <h2>A self-hosted deployment</h2>
+        <p>
+          When you run Comply, you or your organization is the controller of the data in it. That
+          includes accounts, assessments, evidence files, conclusions, MCP keys, and the public trust
+          center. The data lives in the directory you mount at <span class="term">/app/data</span>, or
+          in your Blob Storage when that is configured.
+        </p>
+        <ul>
+          <li>The application stores sessions in the browser's local storage, not in a cookie.</li>
+          <li>MCP keys are tenant-bound and can be revoked from the settings page.</li>
+          <li>Evidence files stay in the deployment's storage; the library refresh reads public source documents.</li>
+          <li>The maintainers have no access to a deployment unless you give it to them.</li>
+        </ul>
+        <p>
+          If you use a public trust center, the claims you publish and the header image you upload
+          are public by design. Keep evidence behind the NDA gate.
+        </p>
+
+        <h2>Your choices</h2>
+        <p>
+          For a self-hosted deployment, contact the operator who runs it. For this website, open an
+          issue in the public repository. If you believe a deployment is exposing data it should not,
+          report it through the security advisory link on the support page.
+        </p>
+
+        <h2>Changes</h2>
+        <p>
+          This page will change as the preview changes. The date at the top is the date of the last
+          revision.
+        </p>
+
+        <h2>Contact</h2>
+        <p>
+          Use the <a href="support.html#contact">support page</a> or the
+          <a href="#" data-site-link="repo">public repository</a>.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="footer-top">
+          <div class="footer-brand" data-reveal>
+            <a class="brand" href="index.html" aria-label="Comply home">
+              <span class="brand-mark">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l8 3v6c0 4.8-3.4 8-8 9-4.6-1-8-4.2-8-9V6z" />
+                  <path d="M9 12l2 2 4-4.2" />
+                </svg>
+              </span>
+              <span class="brand-name">Comply</span>
+            </a>
+            <p>
+              Audit evidence software for NIS2, ISO/IEC 27001, SOC 2, and the EU AI Act. It records evidence;
+              it does not certify compliance.
+            </p>
+          </div>
+
+          <div class="footer-col" data-reveal>
+            <h3>Product</h3>
+            <ul>
+              <li><a href="index.html#product">How it works</a></li>
+              <li><a href="index.html#agent">Agent and MCP</a></li>
+              <li><a href="pricing.html">Pricing</a></li>
+              <li><a href="#" data-site-link="signin">Sign in</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col" data-reveal>
+            <h3>Resources</h3>
+            <ul>
+              <li><a href="support.html">Support</a></li>
+              <li><a href="support.html#setup">Install</a></li>
+              <li><a href="#" data-site-link="docs">API docs</a></li>
+              <li><a href="#" data-site-link="repo">GitHub</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col" data-reveal>
+            <h3>Legal</h3>
+            <ul>
+              <li><a href="privacy.html" aria-current="page">Privacy</a></li>
+              <li><a href="terms.html">Terms</a></li>
+              <li><a href="support.html#contact">Contact</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer-word" aria-hidden="true" data-reveal>Comply</div>
+        <div class="footer-bottom">
+          <span>© <span data-current-year>2026</span> Comply</span>
+          <span>Built to run inside your environment.</span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "COMPLY_DATA_DIR": "../../../../data",
+    "COMPLY_PUBLIC_URL": "http://localhost:7071",
+    "COMPLY_DB_CONNECTION": "Host=localhost;Database=comply;Username=comply;Password=comply",
+    "COMPLY_DB_MIGRATE": "1",
+    "COMPLY_AUTH_SECRET": "",
+    "COMPLY_APP_URL": "http://localhost:4200",
+    "COMPLY_DEV_LINKS": "1"
+  }
+}

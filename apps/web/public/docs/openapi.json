@@ -1,0 +1,2144 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Comply API",
+    "version": "0.1.0",
+    "description": "Comply is a multi-tenant audit-evidence portal for NIS2, ISO/IEC 27001, and the EU AI Act. This contract covers the REST API, the authentication flow, and the MCP JSON-RPC endpoint.\n\n## Authentication\n\nREST requests select the tenant with `x-comply-tenant`. Sign-in endpoints return a signed session token; send it as `Authorization: Bearer <session>`. MCP clients send a tenant-bound key as `Authorization: Bearer sk_mcp_<tenant>_<hex>`.\n\n## Content\n\nRequirements come from the managed library. Customers read them and cannot edit the source material. Assessment state is stored per tenant and survives a restart.\n\n## MCP\n\nThe MCP endpoint uses JSON-RPC 2.0 over Streamable HTTP. Call `tools/list` for the current tool schemas. The guided journey is `start_assessment`, `set_scope`, `get_brief`, `submit_evidence`, `complete_requirement`, `review_assessment`, and `export_assessment`.",
+    "contact": {
+      "name": "Comply",
+      "url": "https://github.com/AdrianTuci1/comply"
+    }
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "The current Comply host"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Liveness and deployment information."
+    },
+    {
+      "name": "Library",
+      "description": "Managed compliance sources, requirements, and documents."
+    },
+    {
+      "name": "Assessments",
+      "description": "Assessment boards created by the UI or by an MCP agent."
+    },
+    {
+      "name": "MCP",
+      "description": "Guided assessment tools over MCP Streamable HTTP."
+    },
+    {
+      "name": "Access keys",
+      "description": "Tenant-bound MCP credentials."
+    },
+    {
+      "name": "Ingest",
+      "description": "Refresh the managed library from official sources."
+    },
+    {
+      "name": "Auth",
+      "description": "Password, email-link, and OIDC sign-in."
+    }
+  ],
+  "x-tagGroups": [
+    {
+      "name": "Platform",
+      "tags": ["Health", "Library", "Assessments"]
+    },
+    {
+      "name": "Agent",
+      "tags": ["MCP"]
+    },
+    {
+      "name": "Administration",
+      "tags": ["Access keys", "Ingest", "Auth"]
+    }
+  ],
+  "security": [
+    {
+      "tenantHeader": []
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "tags": ["Health"],
+        "operationId": "getHealth",
+        "summary": "Liveness probe",
+        "description": "Returns ok when the process is ready to serve requests.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The process is healthy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runtime": {
+      "get": {
+        "tags": ["Health"],
+        "operationId": "getRuntime",
+        "summary": "Deployment information",
+        "description": "Reports the deployment mode, public URL, trust-center host, and configured sign-in providers.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Runtime configuration visible to the browser.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Runtime"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/library": {
+      "get": {
+        "tags": ["Library"],
+        "operationId": "listLibrary",
+        "summary": "List managed requirements",
+        "description": "Returns the managed sources, requirements, and documents. Without query parameters the full library is returned; with any parameter the requirement list is paginated.",
+        "parameters": [
+          {
+            "name": "framework",
+            "in": "query",
+            "description": "Filter by framework.",
+            "schema": {
+              "$ref": "#/components/schemas/FrameworkId"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by content review status.",
+            "schema": {
+              "$ref": "#/components/schemas/ContentStatus"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Case-insensitive substring over reference, title, and text.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The managed library.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/frameworks": {
+      "get": {
+        "tags": ["Library"],
+        "operationId": "listFrameworks",
+        "summary": "List frameworks",
+        "description": "Counts and source metadata for every framework in the registry.",
+        "responses": {
+          "200": {
+            "description": "Framework summaries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["frameworks"],
+                  "properties": {
+                    "frameworks": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Framework"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents": {
+      "get": {
+        "tags": ["Library"],
+        "operationId": "listDocuments",
+        "summary": "List captured source documents",
+        "description": "Metadata and hashes for the source documents used to build the library.",
+        "responses": {
+          "200": {
+            "description": "Captured documents.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["documents"],
+                  "properties": {
+                    "documents": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Document"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}": {
+      "get": {
+        "tags": ["Library"],
+        "operationId": "getDocument",
+        "summary": "Read one captured document",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DocumentId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["document"],
+                  "properties": {
+                    "document": {
+                      "$ref": "#/components/schemas/Document"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/agent/assessments": {
+      "get": {
+        "tags": ["Assessments"],
+        "operationId": "listAssessments",
+        "summary": "List tenant assessments",
+        "description": "Newest first. Each item is a summary with phase, scope, progress, and the last update.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assessments for the tenant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["assessments"],
+                  "properties": {
+                    "assessments": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AssessmentSummary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/assessments/{id}": {
+      "get": {
+        "tags": ["Assessments"],
+        "operationId": "getAssessment",
+        "summary": "Read one assessment",
+        "description": "Full board data: every requirement, evidence record, conclusion, progress, and next action.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantHeader"
+          },
+          {
+            "$ref": "#/components/parameters/AssessmentId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The assessment and its requirements.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/agent/boards": {
+      "get": {
+        "tags": ["Assessments"],
+        "operationId": "listAgentBoards",
+        "summary": "List agent boards",
+        "description": "The cards shown under Workspace > Assessment boards > Agent boards.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent assessment summaries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["boards"],
+                  "properties": {
+                    "boards": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AssessmentSummary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/boards/{id}": {
+      "get": {
+        "tags": ["Assessments"],
+        "operationId": "getAgentBoard",
+        "summary": "Read one agent board",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantHeader"
+          },
+          {
+            "$ref": "#/components/parameters/AssessmentId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The board detail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["assessment"],
+                  "properties": {
+                    "assessment": {
+                      "$ref": "#/components/schemas/AssessmentDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/access/keys": {
+      "get": {
+        "tags": ["Access keys"],
+        "operationId": "listMcpKeys",
+        "summary": "List MCP keys",
+        "description": "Secrets are never returned after creation.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active and revoked keys.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["keys"],
+                  "properties": {
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/McpKey"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Access keys"],
+        "operationId": "createMcpKey",
+        "summary": "Create an MCP key",
+        "description": "The secret is returned once. Store it in the agent's secret manager.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMcpKeyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new key and its one-time secret.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpKeyCreated"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/api/access/keys/{id}": {
+      "delete": {
+        "tags": ["Access keys"],
+        "operationId": "revokeMcpKey",
+        "summary": "Revoke an MCP key",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantHeader"
+          },
+          {
+            "$ref": "#/components/parameters/KeyId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The key is revoked."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/ingest": {
+      "get": {
+        "tags": ["Ingest"],
+        "operationId": "listIngestJobs",
+        "summary": "List refresh jobs",
+        "responses": {
+          "200": {
+            "description": "Jobs newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["jobs"],
+                  "properties": {
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/IngestJob"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Ingest"],
+        "operationId": "startIngest",
+        "summary": "Refresh the managed library",
+        "description": "Starts the ingest pipeline for one framework or all downloadable frameworks. ISO/IEC 27001 and SOC 2 are proprietary and are not downloaded.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "framework": {
+                    "type": "string",
+                    "enum": ["all", "nis2", "ai-act"],
+                    "default": "all"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "The job was started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["job"],
+                  "properties": {
+                    "job": {
+                      "$ref": "#/components/schemas/IngestJob"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/api/ingest/schedule": {
+      "get": {
+        "tags": ["Ingest"],
+        "operationId": "getIngestSchedule",
+        "summary": "Read the refresh schedule",
+        "responses": {
+          "200": {
+            "description": "Current schedule and last result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["schedule"],
+                  "properties": {
+                    "schedule": {
+                      "$ref": "#/components/schemas/IngestSchedule"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ingest/{id}": {
+      "get": {
+        "tags": ["Ingest"],
+        "operationId": "getIngestJob",
+        "summary": "Read one refresh job",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job progress and logs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["job"],
+                  "properties": {
+                    "job": {
+                      "$ref": "#/components/schemas/IngestJob"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/auth/magic-link": {
+      "post": {
+        "tags": ["Auth"],
+        "operationId": "requestMagicLink",
+        "summary": "Request an email sign-in link",
+        "description": "In development the link token is returned as `devToken`. In production it is delivered by the configured mail webhook.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The link was created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MagicLinkResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "503": {
+            "description": "Email delivery is not configured."
+          }
+        }
+      }
+    },
+    "/api/auth/verify": {
+      "post": {
+        "tags": ["Auth"],
+        "operationId": "verifyMagicLink",
+        "summary": "Exchange an email link for a session",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["token"],
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A signed session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/api/auth/providers": {
+      "get": {
+        "tags": ["Auth"],
+        "operationId": "getAuthProviders",
+        "summary": "Read configured sign-in methods",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Password, OIDC, demo, and first-run state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthProviders"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "operationId": "registerFirstAccount",
+        "summary": "Create the first administrator",
+        "description": "Available only while the installation has no accounts. The first account becomes the administrator; later accounts are members.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The administrator session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "description": "Setup is already complete."
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "operationId": "login",
+        "summary": "Sign in with email and password",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A signed session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Email or password is incorrect."
+          }
+        }
+      }
+    },
+    "/api/auth/exchange": {
+      "post": {
+        "tags": ["Auth"],
+        "operationId": "exchangeSignInCode",
+        "summary": "Exchange an OIDC sign-in code",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["code"],
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A signed session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "operationId": "getCurrentUser",
+        "summary": "Read the current session user",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The signed-in user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["user"],
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in."
+          }
+        }
+      }
+    },
+    "/api/auth/sign-out": {
+      "post": {
+        "tags": ["Auth"],
+        "operationId": "signOut",
+        "summary": "Sign out",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The client should discard the session."
+          }
+        }
+      }
+    },
+    "/api/auth/oidc/{provider}/{action}": {
+      "get": {
+        "tags": ["Auth"],
+        "operationId": "oidcFlow",
+        "summary": "Start or finish an OIDC sign-in",
+        "description": "`start` redirects to the identity provider. `callback` validates the response and redirects to the app with a one-time code.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "description": "Configured provider id.",
+            "schema": {
+              "type": "string"
+            },
+            "examples": {
+              "google": {
+                "value": "google"
+              },
+              "microsoft": {
+                "value": "microsoft"
+              },
+              "github": {
+                "value": "github"
+              }
+            }
+          },
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["start", "callback"]
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to the provider or back to the app."
+          },
+          "404": {
+            "description": "The provider is not configured."
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "tags": ["MCP"],
+        "operationId": "mcpJsonRpc",
+        "summary": "Call the MCP endpoint",
+        "description": "Streamable HTTP MCP over JSON-RPC 2.0. Send a tenant-bound key as `Authorization: Bearer sk_mcp_<tenant>_<hex>`. Supported methods are `initialize`, `ping`, `tools/list`, `tools/call`, `resources/list`, and `prompts/list`.\n\n### Tools\n\n- `get_agent_guide` returns the workflow and language policy.\n- `start_assessment` creates a NIS2, ISO/IEC 27001, or AI Act assessment.\n- `list_assessments` reconnects to a previous run with pagination.\n- `get_assessment_state` returns the phase, progress, blockers, and next actions.\n- `set_scope` stores the English scope and period.\n- `get_brief` returns up to five prioritized requirements.\n- `list_requirements` paginates the checklist with status and text filters.\n- `search_requirements` ranks the checklist by lexical similarity.\n- `get_progress` reports status and theme progress.\n- `get_requirement` returns one requirement, its evidence, and the question to ask.\n- `submit_evidence` records an artifact with an English summary and citation.\n- `complete_requirement` accepts a requirement with an English conclusion.\n- `mark_not_applicable` records an English reason.\n- `review_assessment` is blocked while requirements are open.\n- `export_assessment` produces the English package with a manifest hash.",
+        "security": [
+          {
+            "mcpKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/McpRequest"
+              },
+              "examples": {
+                "initialize": {
+                  "summary": "Initialize the session",
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {
+                      "protocolVersion": "2025-06-18"
+                    }
+                  }
+                },
+                "listTools": {
+                  "summary": "List tools",
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 2,
+                    "method": "tools/list"
+                  }
+                },
+                "startAssessment": {
+                  "summary": "Start an assessment",
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 3,
+                    "method": "tools/call",
+                    "params": {
+                      "name": "start_assessment",
+                      "arguments": {
+                        "framework": "nis2",
+                        "scope": "Production Azure subscription and corporate identity provider."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A JSON-RPC response with either `result` or `error`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "A notification was accepted with no response body."
+          },
+          "401": {
+            "description": "The MCP key is missing, invalid, or revoked."
+          },
+          "403": {
+            "description": "The tenant header does not match the key."
+          }
+        }
+      },
+      "get": {
+        "tags": ["MCP"],
+        "operationId": "mcpGetNotAllowed",
+        "summary": "MCP requires POST",
+        "security": [],
+        "responses": {
+          "405": {
+            "description": "Use POST with a JSON-RPC request.",
+            "headers": {
+              "allow": {
+                "schema": {
+                  "type": "string",
+                  "const": "POST"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "tenantHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-comply-tenant",
+        "description": "Tenant selector for the REST API. The value must match the tenant that owns the data."
+      },
+      "session": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Signed session token returned by the sign-in endpoints."
+      },
+      "mcpKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Tenant-bound MCP key with the form sk_mcp_<tenant>_<64 hex characters>."
+      }
+    },
+    "parameters": {
+      "TenantHeader": {
+        "name": "x-comply-tenant",
+        "in": "header",
+        "required": false,
+        "description": "Tenant identifier. Development installs default to `nordwind` when omitted.",
+        "schema": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{1,39}$"
+        }
+      },
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "description": "Page number, starting at 1.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "PageSize": {
+        "name": "pageSize",
+        "in": "query",
+        "description": "Items per page. The library caps this at 500.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "default": 50
+        }
+      },
+      "AssessmentId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "DocumentId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+$"
+        }
+      },
+      "KeyId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9-]+$"
+        }
+      },
+      "JobId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "The request is invalid.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "The resource was not found.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "FrameworkId": {
+        "type": "string",
+        "enum": ["nis2", "iso27001", "ai-act", "soc2"]
+      },
+      "ContentStatus": {
+        "type": "string",
+        "enum": ["draft", "in_review", "published"]
+      },
+      "Theme": {
+        "type": "string",
+        "enum": ["infrastructure", "organizational", "product", "procedures", "data_privacy"]
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "required": ["status", "time"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Runtime": {
+        "type": "object",
+        "required": [
+          "deployment",
+          "publicUrl",
+          "trust",
+          "passwordLogin",
+          "providers",
+          "setupRequired"
+        ],
+        "properties": {
+          "deployment": {
+            "type": "string",
+            "enum": ["managed", "self_hosted"]
+          },
+          "publicUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "trust": {
+            "type": "object",
+            "properties": {
+              "host": {
+                "type": ["string", "null"]
+              },
+              "slug": {
+                "type": ["string", "null"]
+              },
+              "managedHost": {
+                "type": "string"
+              }
+            }
+          },
+          "passwordLogin": {
+            "type": "boolean"
+          },
+          "providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Provider"
+            }
+          },
+          "setupRequired": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Provider": {
+        "type": "object",
+        "required": ["id", "label", "kind"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          }
+        }
+      },
+      "Source": {
+        "type": "object",
+        "required": [
+          "id",
+          "frameworkId",
+          "title",
+          "publisher",
+          "version",
+          "kind",
+          "license",
+          "importedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "frameworkId": {
+            "$ref": "#/components/schemas/FrameworkId"
+          },
+          "title": {
+            "type": "string"
+          },
+          "publisher": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string"
+          },
+          "importedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastReviewedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          }
+        }
+      },
+      "Requirement": {
+        "type": "object",
+        "required": [
+          "id",
+          "sourceId",
+          "frameworkId",
+          "ref",
+          "title",
+          "text",
+          "theme",
+          "status",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "frameworkId": {
+            "$ref": "#/components/schemas/FrameworkId"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "theme": {
+            "$ref": "#/components/schemas/Theme"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ContentStatus"
+          },
+          "reviewer": {
+            "type": ["string", "null"]
+          },
+          "reviewedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Document": {
+        "type": "object",
+        "required": [
+          "id",
+          "sourceId",
+          "frameworkId",
+          "title",
+          "url",
+          "publisher",
+          "license",
+          "fetchedAt",
+          "sha256",
+          "bytes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "frameworkId": {
+            "$ref": "#/components/schemas/FrameworkId"
+          },
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "officialUrl": {
+            "type": ["string", "null"],
+            "format": "uri"
+          },
+          "publisher": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string"
+          },
+          "fetchedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "bytes": {
+            "type": "integer"
+          }
+        }
+      },
+      "LibraryPage": {
+        "type": "object",
+        "required": ["sources", "requirements", "documents", "total", "page", "pageSize"],
+        "properties": {
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            }
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Requirement"
+            }
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Document"
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          }
+        }
+      },
+      "Framework": {
+        "type": "object",
+        "required": [
+          "frameworkId",
+          "title",
+          "publisher",
+          "version",
+          "license",
+          "requirements",
+          "published",
+          "documents"
+        ],
+        "properties": {
+          "frameworkId": {
+            "$ref": "#/components/schemas/FrameworkId"
+          },
+          "title": {
+            "type": "string"
+          },
+          "publisher": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string"
+          },
+          "indexUrl": {
+            "type": ["string", "null"],
+            "format": "uri"
+          },
+          "officialUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "connector": {
+            "type": ["string", "null"]
+          },
+          "sourceId": {
+            "type": ["string", "null"]
+          },
+          "requirements": {
+            "type": "integer"
+          },
+          "published": {
+            "type": "integer"
+          },
+          "documents": {
+            "type": "integer"
+          },
+          "lastFetchedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          }
+        }
+      },
+      "Progress": {
+        "type": "object",
+        "required": [
+          "total",
+          "completed",
+          "not_applicable",
+          "evidence_collected",
+          "open",
+          "evidence",
+          "percent"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "completed": {
+            "type": "integer"
+          },
+          "not_applicable": {
+            "type": "integer"
+          },
+          "evidence_collected": {
+            "type": "integer"
+          },
+          "open": {
+            "type": "integer"
+          },
+          "evidence": {
+            "type": "integer"
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      },
+      "Period": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "to": {
+            "type": ["string", "null"],
+            "format": "date"
+          }
+        }
+      },
+      "AssessmentSummary": {
+        "type": "object",
+        "required": [
+          "assessment_id",
+          "name",
+          "framework",
+          "phase",
+          "scope",
+          "period",
+          "progress",
+          "updated_at"
+        ],
+        "properties": {
+          "assessment_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "framework": {
+            "$ref": "#/components/schemas/FrameworkId"
+          },
+          "phase": {
+            "type": "string",
+            "enum": ["scope", "collect", "review", "export", "complete"]
+          },
+          "scope": {
+            "type": ["string", "null"]
+          },
+          "period": {
+            "$ref": "#/components/schemas/Period"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/Progress"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AgentEvent": {
+        "type": "object",
+        "required": ["at", "revision", "type", "message"],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Action": {
+        "type": "object",
+        "required": ["tool", "description"],
+        "properties": {
+          "tool": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "arguments": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "LanguagePolicy": {
+        "type": "object",
+        "required": ["userLanguage", "publishLanguage", "instruction"],
+        "properties": {
+          "userLanguage": {
+            "type": "string"
+          },
+          "publishLanguage": {
+            "type": "string"
+          },
+          "instruction": {
+            "type": "string"
+          }
+        }
+      },
+      "Evidence": {
+        "type": "object",
+        "required": ["id", "title", "type", "source", "summary", "collectedAt", "hash"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "document",
+              "screenshot",
+              "log_export",
+              "config_export",
+              "api_report",
+              "attestation"
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "citation": {
+            "type": ["string", "null"]
+          },
+          "collectedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "hash": {
+            "type": "string"
+          }
+        }
+      },
+      "AssessmentRequirement": {
+        "type": "object",
+        "required": ["requirement_id", "ref", "title", "description", "status", "evidence_count"],
+        "properties": {
+          "requirement_id": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["open", "evidence_collected", "completed", "not_applicable"]
+          },
+          "evidence_count": {
+            "type": "integer"
+          },
+          "conclusion": {
+            "type": ["string", "null"]
+          },
+          "completed_at": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "theme": {
+            "$ref": "#/components/schemas/Theme"
+          },
+          "contentStatus": {
+            "$ref": "#/components/schemas/ContentStatus"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            }
+          }
+        }
+      },
+      "AssessmentDetail": {
+        "type": "object",
+        "required": [
+          "assessment_id",
+          "name",
+          "framework",
+          "status",
+          "phase",
+          "scope",
+          "period",
+          "revision",
+          "updated_at",
+          "progress",
+          "blocked_by",
+          "next_actions",
+          "language_policy",
+          "items",
+          "total"
+        ],
+        "properties": {
+          "assessment_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "framework": {
+            "$ref": "#/components/schemas/FrameworkId"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["scope", "collect", "review", "export", "complete"]
+          },
+          "phase": {
+            "type": "string",
+            "enum": ["scope", "collect", "review", "export", "complete"]
+          },
+          "scope": {
+            "type": ["string", "null"]
+          },
+          "period": {
+            "$ref": "#/components/schemas/Period"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "content_status": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentEvent"
+            }
+          },
+          "progress": {
+            "$ref": "#/components/schemas/Progress"
+          },
+          "blocked_by": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "next_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            }
+          },
+          "language_policy": {
+            "$ref": "#/components/schemas/LanguagePolicy"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentRequirement"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "CreateMcpKeyRequest": {
+        "type": "object",
+        "required": ["name", "scopes"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "examples": ["Production harness"]
+          },
+          "scopes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "enum": ["read", "evidence:write", "admin"]
+            }
+          }
+        }
+      },
+      "McpKey": {
+        "type": "object",
+        "required": ["id", "tenantId", "name", "prefix", "scopes", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          }
+        }
+      },
+      "McpKeyCreated": {
+        "type": "object",
+        "required": ["key", "secret"],
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/McpKey"
+          },
+          "secret": {
+            "type": "string",
+            "description": "Returned once. Store it in a secret manager."
+          }
+        }
+      },
+      "IngestJob": {
+        "type": "object",
+        "required": ["id", "framework", "frameworks", "status", "startedAt", "logs"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "framework": {
+            "type": "string"
+          },
+          "frameworks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": ["running", "succeeded", "failed"]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "logs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "result": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "error": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "IngestSchedule": {
+        "type": "object",
+        "required": ["enabled", "intervalHours"],
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "intervalHours": {
+            "type": "number"
+          },
+          "lastRunAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "lastFinishedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "lastTrigger": {
+            "type": ["string", "null"]
+          },
+          "lastStatus": {
+            "type": ["string", "null"]
+          },
+          "lastError": {
+            "type": ["string", "null"]
+          },
+          "lastResult": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "nextRunAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "running": {
+            "type": ["object", "null"],
+            "additionalProperties": true
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": ["email", "name", "organizationName", "role"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string"
+          },
+          "organizationName": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["admin", "member"]
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "required": ["session", "expiresAt", "user"],
+        "properties": {
+          "session": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      },
+      "AuthProviders": {
+        "type": "object",
+        "required": ["password", "providers", "setupRequired"],
+        "properties": {
+          "password": {
+            "type": "boolean"
+          },
+          "providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Provider"
+            }
+          },
+          "demo": {
+            "type": ["object", "null"],
+            "properties": {
+              "email": {
+                "type": "string"
+              },
+              "password": {
+                "type": "string"
+              }
+            }
+          },
+          "setupRequired": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["email", "name", "password", "organizationName"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 10
+          },
+          "organizationName": {
+            "type": "string"
+          }
+        }
+      },
+      "MagicLinkResult": {
+        "type": "object",
+        "required": ["sent", "email", "expiresAt"],
+        "properties": {
+          "sent": {
+            "type": "boolean"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "devToken": {
+            "type": "string",
+            "description": "Development only."
+          }
+        }
+      },
+      "McpRequest": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "method"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "const": "2.0"
+          },
+          "id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "initialize",
+              "ping",
+              "tools/list",
+              "tools/call",
+              "resources/list",
+              "prompts/list"
+            ]
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "McpResponse": {
+        "type": "object",
+        "required": ["jsonrpc", "id"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "const": "2.0"
+          },
+          "id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": {
+                "type": "integer"
+              },
+              "message": {
+                "type": "string"
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

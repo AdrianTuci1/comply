@@ -18,7 +18,7 @@
     "docType": { "const": "manifest" },
     "frameworkId": {
       "type": "string",
-      "enum": ["nis2", "iso27001", "ai-act"]
+      "enum": ["nis2", "iso27001", "ai-act", "soc2"]
     },
     "version": { "type": "string", "pattern": "^[0-9]{4}\\.[0-9]+\\.[0-9]+$" },
     "publishedAt": { "type": "string", "format": "date-time" },

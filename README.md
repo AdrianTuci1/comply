@@ -1,31 +1,37 @@
 # Comply
 
-Multi-tenant evidence portal for NIS2, ISO/IEC 27001, and the EU AI Act. The customer
-runs the agent inside their own infrastructure. Comply holds the content library, the
-assessment state machine, and the audit package. The product does not certify anything.
+Multi-tenant evidence portal for NIS2, ISO/IEC 27001, the EU AI Act, and SOC 2. The
+customer runs the agent inside their own infrastructure. Comply holds the content
+library, the assessment state machine, and the audit package. The product does not
+certify anything.
 
 ## What it does
 
-- **Managed requirements.** NIS2, ISO/IEC 27001, and EU AI Act checklists are refreshed
-  from the official texts. Customers read them and cannot edit the source material.
+- **Managed requirements.** NIS2 and EU AI Act are refreshed from the official texts;
+  ISO/IEC 27001 Annex A and SOC 2 are curated summaries reviewed against the licensed
+  standards. Customers read them and cannot edit the source material.
 - **Assessment boards.** Every requirement keeps its article reference and description.
   Teams record conclusions, evidence, and review status on one board.
 - **Guided agent over MCP.** The customer connects any MCP client with a tenant-bound key.
   The API returns the next action at every step, from scope to export.
 - **Public trust center.** Approved claims become a public page at `/t/<slug>`, with an
   uploaded header image and an optional custom domain.
-- **One container.** The Angular interface, API, MCP endpoint, and trust page share one
-  process, one port, and one data directory.
+- **Two deployment paths.** The self-hosted container serves the Angular interface, API, MCP
+  endpoint, and trust page from one process. The split deployment runs the API and MCP on a
+  .NET Function App with PostgreSQL, and serves the Angular build from a CDN.
 
 ## Under the hood
 
 - **Angular 22** standalone components, signals, and lazy routes for the portal and trust
   center.
-- **Node 24** host with no runtime npm dependencies. It serves the static build, `/api`,
-  `/mcp`, and `/healthz` from one process.
+- **.NET 8 isolated Azure Functions** as the primary API host, with PostgreSQL for users,
+  assessments, evidence, and MCP keys.
+- **Node 24** host with no runtime npm dependencies, kept for self-hosted single-container
+  installs; it serves the static build, `/api`, `/mcp`, and `/healthz` from one process.
 - **MCP Streamable HTTP** implemented directly over JSON-RPC 2.0, with tenant-bound keys.
-- **Azure Functions** entry point that wraps the same request handler; Blob Storage backs
-  documents and the content library when configured.
+- **Azure Functions** entry points for both hosts: the .NET app for the split deployment and
+  the Node wrapper for the one-container path. Blob Storage backs documents and the content
+  library when configured.
 
 ## Compatibility
 
@@ -35,7 +41,7 @@ assessment state machine, and the audit package. The product does not certify an
 | Python installer  | 3.8+                                              |
 | Node, from source | 22+                                               |
 | Browsers          | Current Chrome, Edge, Firefox, and Safari         |
-| Azure Functions   | Node v4 programming model, Linux Consumption plan |
+| Azure Functions   | .NET 8 isolated worker (split hosting) or Node v4 (self-hosted), Linux Consumption |
 
 ## Getting Started (Production)
 
@@ -134,19 +140,23 @@ unless `COMPLY_BLOB_*` points to Azure Blob Storage.
 ## Structure
 
 ```
-src/web/                 Angular interface (sign-in, portal, workspace, trust center)
-src/server/api/          Node host: API, MCP, static Angular build, ingest, auth
-azure/functions/         one catch-all Azure Function that wraps the same handler
+apps/web/                Angular interface (sign-in, portal, workspace, trust center)
+apps/api-node/           Node host: self-hosted API, MCP, static build, ingest, auth
+apps/api-dotnet/         primary API: .NET 8 isolated Functions host on PostgreSQL
+apps/functions-node/     catch-all Node Azure Function used by the self-hosted path
+apps/landing/            static marketing site
 bin/comply.mjs           npx launcher for the container image
 easy-install.py          production installer, no repository checkout required
-deploy/                  docker-compose.yml and init.sh for the no-clone install
+deploy/                  Compose and init.sh for the no-clone Node install
+deploy/dotnet/           local split stack: PostgreSQL, Functions host, static Angular
 content/                 versioned requirements per framework
 contracts/               JSON schemas for content
 tools/content-ingest/    local pipeline: document → draft → requirement → bundle
-infra/bicep/             Function App, private Blob container, app settings
+infra/bicep/             Function App, PostgreSQL, Static Web App (split hosting)
 data/                    runtime library, accounts, assessments, blobs (git ignored)
-.agents/                 specifications for agents
-compose.yaml             one local container on port 8080
+docs/agents/             specifications for agents
+compose.yaml             one local Node container on port 8080
+Dockerfile               one-image build for the self-hosted Node path
 ```
 
 ## Local start
@@ -154,7 +164,7 @@ compose.yaml             one local container on port 8080
 The Node host serves the Angular build, `/api`, `/mcp`, and `/healthz` on one port.
 
 ```bash
-cd src/web
+cd apps/web
 npm install
 npm run build
 
@@ -166,12 +176,12 @@ For interface development, run the API and `ng serve` separately; the proxy forw
 `/api` to port 4300.
 
 ```bash
-cd src/server/api && npm start        # API on 4300
-cd src/web && npm start               # UI on 4200
+cd apps/api-node && npm start        # API on 4300
+cd apps/web && npm start               # UI on 4200
 ```
 
-On first start the API uses the seed in `src/server/api/seed/`: 1,415 requirements
-extracted from the official EU AI Act and NIS2 texts. Refreshes update
+On first start the API uses the seed in `apps/api-node/seed/`: 1,569 requirements
+across the EU AI Act, NIS2, ISO/IEC 27001, and SOC 2. Refreshes update
 `data/library.json`; accounts, agent assessments, and MCP keys live in `data/` as well.
 The directory is mounted in Docker, so a restart keeps them.
 
@@ -323,24 +333,46 @@ identity providers.
 
 ## Azure Functions
 
-`azure/functions/src/functions/comply.js` registers one catch-all HTTP trigger. It calls
-the same `createApp()` and `handle()` used by the container, so static files, `/api`,
-`/mcp`, auth, and the trust redirect behave identically.
+The primary deployment is split across three pieces:
+
+- **.NET 8 isolated Function App** (`apps/api-dotnet`) serves `/api/*`, `/mcp`, and
+  `/healthz` on the Linux Consumption plan (`DOTNET-ISOLATED|8.0`).
+- **PostgreSQL Flexible Server 16** stores users, organizations, assessments, evidence, and MCP
+  keys. Migrations run when the worker starts, so the database must be reachable before the app
+  can serve traffic.
+- **Azure Static Web App** (or any CDN) hosts the Angular build only. It is not linked to the
+  Function App: the bundle reads `apiBase` from `config.js` and calls the Function App
+  cross-origin, with `COMPLY_APP_URL` as the CORS allowlist.
+
+`infra/bicep/main.bicep` provisions all three plus the storage account for Functions host state
+and the private `comply` blob container. Parameter examples, deployment commands, the Angular
+upload (`swa deploy ./dist/web/browser`), and the OIDC callback URLs are in
+[infra/bicep/README.md](infra/bicep/README.md). The same split runs locally with Docker; see
+[deploy/dotnet/README.md](deploy/dotnet/README.md).
+
+Publish the .NET app:
 
 ```bash
-cd src/web && npm run build && cd ../..
+cd apps/api-dotnet/src/Comply.Functions
+func azure functionapp publish <function-app-name> --dotnet-isolated
+```
+
+The Node path is still available for self-hosting. `compose.yaml`, the published
+`ghcr.io/adriantuci1/comply` image, and the catch-all trigger in
+`apps/functions-node/src/functions/comply.js` wrap the same `createApp()`/`handle()` handler, so
+static files, `/api`, `/mcp`, auth, and the trust redirect share one origin and one data
+directory:
+
+```bash
+cd apps/web && npm run build && cd ../..
 node tools/build-functions.mjs
 cd dist/azure && npm install --omit=dev
 func azure functionapp publish <function-app-name>
 ```
 
-`infra/bicep/main.bicep` creates a Linux Consumption Function App, a private Blob
-container, and the app settings. The container is never public; `COMPLY_BLOB_*` enables
-the Blob adapter for the library and captured documents, and `signedUrl()` issues
-short-lived read SAS links.
-
-The Functions filesystem under `/home/data` is per instance. A multi-instance production
-deployment should move users, assessments, and MCP keys to Cosmos DB or Blob state.
+On the Node path the filesystem under `/home/data` is per instance, so a multi-instance
+deployment should move users, assessments, and MCP keys to Cosmos DB or Blob state. The .NET
+deployment avoids that by keeping the same records in PostgreSQL.
 
 ## Content
 
@@ -349,7 +381,7 @@ requirements from the structure of each act. It does not invent text and does no
 language model for parsing.
 
 ```bash
-cd src/server/api
+cd apps/api-node
 npm run list             # sources, requirements, documents
 npm run ingest -- --framework nis2
 npm run ingest -- --framework ai-act
@@ -363,6 +395,7 @@ Sources:
 | EU AI Act     | Regulation (EU) 2024/1689 | `artificialintelligenceact.eu` (official text mirror) | public      |
 | NIS2          | Directive (EU) 2022/2555  | `nis-2-directive.com` (official text mirror)          | public      |
 | ISO/IEC 27001 | ISO/IEC 27001:2022        | document uploaded by the customer                     | proprietary |
+| SOC 2         | AICPA Trust Services Criteria | AICPA TSC (2017, revised 2022)                    | proprietary |
 
 EUR-Lex blocks automated requests with AWS WAF. Every document keeps the official EUR-Lex
 link in its metadata, and requirements keep the article reference. The ISO standard text
@@ -381,7 +414,7 @@ node cli.mjs validate --all
 node cli.mjs build --all
 ```
 
-Licensed-source rules are in [`.agents/content-pipeline.md`](.agents/content-pipeline.md).
+Licensed-source rules are in [`docs/agents/content-pipeline.md`](docs/agents/content-pipeline.md).
 
 ## Assessment boards
 
@@ -468,23 +501,26 @@ endpoint accepts user-created sources or requirement edits.
 The public reference is served at `/docs`. It renders the OpenAPI contract with Scalar and
 covers the REST API, sign-in, and the MCP JSON-RPC endpoint. The contract itself is at
 `/docs/openapi.json`; the source lives in
-[`src/web/public/docs/openapi.json`](src/web/public/docs/openapi.json).
+[`apps/web/public/docs/openapi.json`](apps/web/public/docs/openapi.json).
 
 The page is a static asset, so it works on the same host as the API without a separate
 documentation service. Both routes are public. The Scalar browser bundle is vendored
-under `src/web/public/docs/vendor/`, so the reference also works on an air-gapped
+under `apps/web/public/docs/vendor/`, so the reference also works on an air-gapped
 self-hosted installation.
 
 ## Tests
 
 ```bash
-cd src/server/api && npm test
-cd tools/content-ingest && npm test
-cd src/web && npm test
+npm test                                        # Node API
+(cd tools/content-ingest && npm test)           # content pipeline
+(cd apps/web && npm test)                       # Angular
+docker run --rm -v "$PWD":/src -w /src/apps/api-dotnet \
+  mcr.microsoft.com/dotnet/sdk:8.0 dotnet test  # .NET
 ```
 
 ## Content licensing
 
 The NIS2 and EU AI Act texts are public and redistributed with attribution. ISO/IEC 27001
-uses original wording and references to control identifiers; the customer supplies the
-standard text. Raw source documents and local drafts are not committed to the repository.
+and the AICPA Trust Services Criteria (SOC 2) use original wording and references to
+control identifiers; the customer supplies the standard text. Raw source documents and
+local drafts are not committed to the repository.

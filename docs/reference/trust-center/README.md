@@ -3,7 +3,7 @@
 Capturi de ecran pentru pagina publică `trust.domeniu.com`. Sunt folosite ca referință de layout și
 comportament, nu ca sursă de conținut. Pagina publică este în engleză. Textele din aplicație sunt
 provizorii și vor fi derivate din criteriile de conformitate (NIS2, ISO 27001, EU AI Act) prin
-pipeline-ul de conținut din `.agents/`.
+pipeline-ul de conținut din `docs/agents/`.
 
 ## Ce rămâne constant pe toate ecranele
 

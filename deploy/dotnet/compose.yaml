@@ -1,0 +1,99 @@
+# Split local stack: PostgreSQL + Azurite + the .NET 8 Functions host (API/MCP) + a static
+# nginx container for the Angular build. The Angular container never proxies /api: the bundle
+# reads apiBase from config.js, exactly like the CDN/Static Web App deployment.
+#
+#   docker compose -f deploy/dotnet/compose.yaml up --build
+#   open http://localhost:8080     (Angular)
+#   curl http://localhost:7071/healthz
+#
+# Values come from deploy/dotnet/.env when present (see .env.example); the defaults below are
+# development-only.
+name: comply-dotnet
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: comply
+      POSTGRES_USER: comply
+      POSTGRES_PASSWORD: comply
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U comply -d comply"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # The Functions host needs a storage account even when every trigger is HTTP.
+  # UseDevelopmentStorage points at localhost, so the connection string targets this service.
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
+    volumes:
+      - azurite-data:/data
+
+  functions:
+    build:
+      context: ../../apps/api-dotnet
+      dockerfile: Dockerfile
+    image: comply/functions:local
+    # mcr.microsoft.com/azure-functions only publishes linux/amd64 images.
+    platform: linux/amd64
+    depends_on:
+      postgres:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+    environment:
+      FUNCTIONS_WORKER_RUNTIME: dotnet-isolated
+      AzureWebJobsStorage: >-
+        DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      COMPLY_DB_CONNECTION: Host=postgres;Port=5432;Database=comply;Username=comply;Password=comply
+      COMPLY_DB_MIGRATE: "1"
+      COMPLY_AUTH_SECRET: ${COMPLY_AUTH_SECRET:-local-development-secret-change-before-production}
+      COMPLY_APP_URL: http://localhost:${WEB_PORT:-8080}
+      COMPLY_PUBLIC_URL: http://localhost:7071
+      # The worker builds its CORS allowlist from COMPLY_APP_URL; this mirrors the Azure app
+      # settings and keeps a future dedicated setting working unchanged. The stack runs outside
+      # production, so the worker also echoes other origins; Azure sets
+      # AZURE_FUNCTIONS_ENVIRONMENT=Production and enforces the allowlist.
+      COMPLY_CORS_ORIGINS: http://localhost:${WEB_PORT:-8080}
+      COMPLY_DEV_LINKS: "1"
+      COMPLY_DATA_DIR: /data
+      COMPLY_SEED_DIR: /seed
+      # Reserved for the Blob adapter; the .NET worker does not read these yet.
+      COMPLY_BLOB_CONNECTION_STRING: >-
+        DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
+      COMPLY_BLOB_CONTAINER: comply
+      COMPLY_OIDC_GOOGLE_CLIENT_ID: ${COMPLY_OIDC_GOOGLE_CLIENT_ID:-}
+      COMPLY_OIDC_GOOGLE_CLIENT_SECRET: ${COMPLY_OIDC_GOOGLE_CLIENT_SECRET:-}
+      COMPLY_OIDC_MICROSOFT_CLIENT_ID: ${COMPLY_OIDC_MICROSOFT_CLIENT_ID:-}
+      COMPLY_OIDC_MICROSOFT_CLIENT_SECRET: ${COMPLY_OIDC_MICROSOFT_CLIENT_SECRET:-}
+      COMPLY_OIDC_MICROSOFT_TENANT: ${COMPLY_OIDC_MICROSOFT_TENANT:-common}
+      COMPLY_OIDC_GITHUB_CLIENT_ID: ${COMPLY_OIDC_GITHUB_CLIENT_ID:-}
+      COMPLY_OIDC_GITHUB_CLIENT_SECRET: ${COMPLY_OIDC_GITHUB_CLIENT_SECRET:-}
+    ports:
+      - "7071:80"
+    volumes:
+      # Writable: ingest writes library.json back into the repository data directory.
+      - ../../data:/data
+      - ../../apps/api-node/seed:/seed:ro
+
+  # Static host for the Angular build. config.js is written at container start from
+  # COMPLY_API_BASE, which emulates editing config.js on a CDN.
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/dotnet/web.Dockerfile
+    image: comply/web:local
+    depends_on:
+      - functions
+    environment:
+      COMPLY_API_BASE: ${COMPLY_API_BASE:-http://localhost:7071}
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+volumes:
+  postgres-data:
+  azurite-data:
