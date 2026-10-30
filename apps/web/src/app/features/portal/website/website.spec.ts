@@ -1,13 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { APP_PROVIDERS } from '../../../app.providers';
+import { TrustPage } from '../../trust/trust-page';
 import { Website } from './website';
 
 describe('Website publication settings', () => {
   beforeEach(async () => {
     localStorage.clear();
     await TestBed.configureTestingModule({
-      imports: [Website],
+      imports: [Website, TrustPage],
       providers: [provideRouter([]), ...APP_PROVIDERS],
     }).compileComponents();
   });
@@ -84,6 +85,72 @@ describe('Website publication settings', () => {
     action('Confirm ownership (demo)').click();
     fixture.detectChanges();
     expect(root.querySelector('.domain-status')?.textContent).toContain('Verified');
+  });
+
+  it('publishes only the selected subprocessors on the public page', () => {
+    const fixture = render();
+    const root: HTMLElement = fixture.nativeElement;
+
+    expect(root.querySelectorAll('.vendor-row').length).toBe(8);
+
+    const awsRow = root.querySelector<HTMLElement>('[data-vendor="s-1"]')!;
+    const awsSwitch = awsRow.querySelector<HTMLButtonElement>('.switch')!;
+    expect(awsSwitch.getAttribute('aria-checked')).toBe('true');
+
+    awsSwitch.click();
+    fixture.detectChanges();
+
+    expect(awsSwitch.getAttribute('aria-checked')).toBe('false');
+
+    const publicPage = TestBed.createComponent(TrustPage);
+    publicPage.componentRef.setInput('slug', 'nordwind');
+    publicPage.componentRef.setInput('tab', 'subprocessors');
+    publicPage.detectChanges();
+
+    const publicRoot: HTMLElement = publicPage.nativeElement;
+    expect(publicRoot.querySelectorAll('.row').length).toBe(7);
+    expect(publicRoot.textContent).not.toContain('Amazon Web Services');
+    expect(publicRoot.textContent).toContain('Cloudflare');
+  });
+
+  it('renames and hides control categories on the public page', () => {
+    const fixture = render();
+    const root: HTMLElement = fixture.nativeElement;
+
+    const infrastructure = root.querySelector<HTMLElement>('[data-category="infrastructure"]')!;
+    const nameInput = infrastructure.querySelector<HTMLInputElement>('input')!;
+    nameInput.value = 'Infra';
+    nameInput.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(root.querySelector('.mini-categories')?.textContent).toContain('Infra');
+
+    const organizational = root.querySelector<HTMLElement>('[data-category="organizational"]')!;
+    organizational.querySelector<HTMLButtonElement>('.switch')!.click();
+    fixture.detectChanges();
+
+    expect(root.querySelector('.mini-categories')?.textContent).not.toContain(
+      'Organizational security',
+    );
+
+    const overview = TestBed.createComponent(TrustPage);
+    overview.componentRef.setInput('slug', 'nordwind');
+    overview.componentRef.setInput('tab', 'overview');
+    overview.detectChanges();
+
+    const overviewRoot: HTMLElement = overview.nativeElement;
+    expect(overviewRoot.querySelectorAll('.control-card').length).toBe(3);
+    expect(overviewRoot.querySelector('.control-card h3')?.textContent).toContain('Infra');
+    expect(overviewRoot.textContent).not.toContain('Organizational security');
+
+    const controls = TestBed.createComponent(TrustPage);
+    controls.componentRef.setInput('slug', 'nordwind');
+    controls.componentRef.setInput('tab', 'controls');
+    controls.detectChanges();
+
+    const controlsRoot: HTMLElement = controls.nativeElement;
+    expect(controlsRoot.querySelectorAll('.group').length).toBe(3);
+    expect(controlsRoot.querySelector('.group h2')?.textContent).toContain('Infra');
   });
 
   it('explains the self-hosted ingress and shows the container command', () => {

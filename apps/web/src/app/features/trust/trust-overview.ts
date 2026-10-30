@@ -10,6 +10,7 @@ import {
   UpdateTag,
 } from '../../domain/trust/trust-center-content';
 import { FrameworkId } from '../../domain/compliance/framework';
+import { TrustCategory } from '../../domain/trust/trust-claim';
 import { formatDateEn, relativeTimeEn } from '../../shared/format';
 import { FRAMEWORK_LABELS, FRAMEWORK_MONOGRAMS } from '../../shared/i18n/labels';
 import { Icon } from '../../shared/icon/icon';
@@ -36,6 +37,7 @@ export class TrustOverview {
   readonly resources = input.required<readonly TrustResource[]>();
   readonly subprocessors = input.required<readonly Subprocessor[]>();
   readonly updates = input.required<readonly TrustUpdate[]>();
+  readonly categoryLabels = input<Record<TrustCategory, string>>(TRUST_CATEGORY_LABELS);
   readonly lastUpdated = input<string | null>(null);
   readonly allowNda = input(false);
 
@@ -44,7 +46,7 @@ export class TrustOverview {
   readonly controlCards = computed<ControlCardView[]>(() =>
     this.groups().map((group) => ({
       category: group.category,
-      label: TRUST_CATEGORY_LABELS[group.category],
+      label: this.categoryLabels()[group.category],
       preview: group.claims.slice(0, 3),
       total: group.claims.length,
     })),

@@ -62,7 +62,7 @@
     <nav class="tabs" aria-label="Trust center sections">
       <div class="tabs__inner">
         <div class="tabs__links">
-          @for (item of tabs; track item.key) {
+          @for (item of tabs(); track item.key) {
             <a
               class="tab"
               [class.is-active]="activeTab() === item.key"
@@ -102,6 +102,7 @@
             [resources]="resources()"
             [subprocessors]="subprocessors()"
             [updates]="updates()"
+            [categoryLabels]="categoryLabels()"
             [lastUpdated]="lastUpdated()"
             [allowNda]="t.trustCenter.allowNda"
             (requestAccess)="openAccess($event)"
@@ -117,7 +118,11 @@
           />
         }
         @case ('controls') {
-          <app-trust-controls [groups]="groups()" [lastUpdated]="lastUpdated()" />
+          <app-trust-controls
+            [groups]="groups()"
+            [categoryLabels]="categoryLabels()"
+            [lastUpdated]="lastUpdated()"
+          />
         }
         @case ('subprocessors') {
           <app-trust-subprocessors [subprocessors]="subprocessors()" />

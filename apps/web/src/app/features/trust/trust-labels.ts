@@ -3,16 +3,10 @@ import {
   ResourceCategory,
   UpdateTag,
 } from '../../domain/trust/trust-center-content';
-import { TrustCategory } from '../../domain/trust/trust-claim';
+import { DEFAULT_TRUST_CATEGORY_LABELS } from '../../shared/i18n/trust-category-labels';
 
 /** English copy for the public trust center. The admin app stays localized separately. */
-export const TRUST_CATEGORY_LABELS: Record<TrustCategory, string> = {
-  infrastructure: 'Infrastructure security',
-  organizational: 'Organizational security',
-  product: 'Product security',
-  procedures: 'Internal procedures',
-  data_privacy: 'Data and privacy',
-};
+export const TRUST_CATEGORY_LABELS = DEFAULT_TRUST_CATEGORY_LABELS;
 
 export const RESOURCE_CATEGORY_LABELS: Record<ResourceCategory, string> = {
   documents: 'Documents',

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { ClaimGroup } from '../../application/trust-center.facade';
-import { TrustClaim } from '../../domain/trust/trust-claim';
+import { TrustCategory, TrustClaim } from '../../domain/trust/trust-claim';
 import { relativeTimeEn } from '../../shared/format';
 import { Icon } from '../../shared/icon/icon';
 import { TRUST_CATEGORY_LABELS } from './trust-labels';
@@ -20,6 +20,7 @@ interface ControlGroupView {
 })
 export class TrustControls {
   readonly groups = input.required<readonly ClaimGroup[]>();
+  readonly categoryLabels = input<Record<TrustCategory, string>>(TRUST_CATEGORY_LABELS);
   readonly lastUpdated = input<string | null>(null);
 
   readonly query = signal('');
@@ -29,7 +30,7 @@ export class TrustControls {
     return this.groups()
       .map((group) => ({
         category: group.category,
-        label: TRUST_CATEGORY_LABELS[group.category],
+        label: this.categoryLabels()[group.category],
         claims: term
           ? group.claims.filter(
               (claim) =>

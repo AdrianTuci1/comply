@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { APP_PROVIDERS } from '../../app.providers';
+import { OrganizationStore } from '../../application/organization.store';
 import { TrustPage } from './trust-page';
 
 describe('TrustPage', () => {
@@ -150,6 +151,41 @@ describe('TrustPage', () => {
     expect(root.textContent).toContain('Amazon Web Services');
     expect(root.textContent).toContain('Cloud hosting');
     expect(root.textContent).toContain('Global');
+  });
+
+  it('drops the subprocessor tab when the tenant publishes no vendor', () => {
+    const store = TestBed.inject(OrganizationStore);
+    store.updateTrustCenter({
+      hiddenSubprocessors: ['s-1', 's-2', 's-3', 's-4', 's-5', 's-6', 's-7', 's-8'],
+    });
+
+    const fixture = render('nordwind');
+    const root: HTMLElement = fixture.nativeElement;
+
+    const tabs = Array.from(root.querySelectorAll('.tab')).map((tab) => tab.textContent?.trim());
+    expect(tabs.length).toBe(4);
+    expect(tabs).not.toContain('Subprocessors');
+  });
+
+  it('uses the category names and visibility from the management settings', () => {
+    const store = TestBed.inject(OrganizationStore);
+    store.updateTrustCenter({
+      categoryLabels: { infrastructure: 'Infra' },
+      hiddenCategories: ['organizational'],
+    });
+
+    const overview = render('nordwind');
+    const overviewRoot: HTMLElement = overview.nativeElement;
+
+    expect(overviewRoot.querySelectorAll('.control-card').length).toBe(3);
+    expect(overviewRoot.querySelector('.control-card h3')?.textContent).toContain('Infra');
+    expect(overviewRoot.textContent).not.toContain('Organizational security');
+
+    const controls = render('nordwind', 'controls');
+    const controlsRoot: HTMLElement = controls.nativeElement;
+
+    expect(controlsRoot.querySelectorAll('.group').length).toBe(3);
+    expect(controlsRoot.querySelector('.group h2')?.textContent).toContain('Infra');
   });
 
   it('paginates updates and expands a body', () => {

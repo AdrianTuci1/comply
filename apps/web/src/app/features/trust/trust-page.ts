@@ -10,12 +10,13 @@ import {
 import { RouterLink } from '@angular/router';
 import { OrganizationStore } from '../../application/organization.store';
 import { ClaimGroup, TrustCenterFacade } from '../../application/trust-center.facade';
+import { TRUST_CATEGORY_ORDER, TrustCategory } from '../../domain/trust/trust-claim';
 import { relativeTimeEn } from '../../shared/format';
 import { Icon } from '../../shared/icon/icon';
 import { TrustAccessDialog, AccessDialogMode } from './trust-access-dialog';
 import { TrustControls } from './trust-controls';
 import { TrustHeader } from './trust-header';
-import { TRUST_TABS, TrustTab } from './trust-labels';
+import { TRUST_CATEGORY_LABELS, TRUST_TABS, TrustTab } from './trust-labels';
 import { TrustOverview } from './trust-overview';
 import { TrustResources } from './trust-resources';
 import { TrustSubprocessors } from './trust-subprocessors';
@@ -58,11 +59,9 @@ export class TrustPage {
 
   readonly accent = computed(() => this.tenant()?.accent ?? '#0f9d76');
 
-  readonly tabs = TRUST_TABS;
-
   readonly activeTab = computed<TrustTab>(() => {
     const requested = this.tab() as TrustTab;
-    return TRUST_TABS.some((entry) => entry.key === requested) ? requested : 'overview';
+    return this.tabs().some((entry) => entry.key === requested) ? requested : 'overview';
   });
 
   readonly publicClaims = computed(() => {
@@ -72,7 +71,21 @@ export class TrustPage {
 
   readonly groups = computed<readonly ClaimGroup[]>(() => {
     const tenant = this.pageTenant();
-    return tenant ? this.trustCenter.groupsFor(tenant.id) : [];
+    if (!tenant) return [];
+    return this.trustCenter
+      .groupsFor(tenant.id)
+      .filter((group) => tenant.trustCenter.isCategoryVisible(group.category));
+  });
+
+  readonly categoryLabels = computed<Record<TrustCategory, string>>(() => {
+    const settings = this.pageTenant()?.trustCenter;
+    const labels = {} as Record<TrustCategory, string>;
+    for (const category of TRUST_CATEGORY_ORDER) {
+      labels[category] = settings
+        ? settings.categoryLabel(category, TRUST_CATEGORY_LABELS[category])
+        : TRUST_CATEGORY_LABELS[category];
+    }
+    return labels;
   });
 
   readonly resources = computed(() => {
@@ -82,7 +95,10 @@ export class TrustPage {
 
   readonly subprocessors = computed(() => {
     const tenant = this.pageTenant();
-    return tenant ? this.trustCenter.subprocessorsFor(tenant.id) : [];
+    if (!tenant) return [];
+    return this.trustCenter
+      .subprocessorsFor(tenant.id)
+      .filter((item) => tenant.trustCenter.isSubprocessorPublished(item.id));
   });
 
   readonly updates = computed(() => {
@@ -93,6 +109,17 @@ export class TrustPage {
   readonly compliance = computed(() => {
     const tenant = this.pageTenant();
     return tenant ? this.trustCenter.complianceFor(tenant.id) : [];
+  });
+
+  /** Sections without published content stay hidden, so the page follows the settings. */
+  readonly tabs = computed(() => {
+    const availability: Partial<Record<TrustTab, boolean>> = {
+      resources: this.resources().length > 0,
+      controls: this.groups().length > 0,
+      subprocessors: this.subprocessors().length > 0,
+      updates: this.updates().length > 0,
+    };
+    return TRUST_TABS.filter((tab) => availability[tab.key] ?? true);
   });
 
   readonly lastUpdated = computed(() => {

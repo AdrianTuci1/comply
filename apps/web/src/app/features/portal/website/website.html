@@ -45,7 +45,7 @@
           }
 
           <div class="mini-categories">
-            @for (category of categories; track category.key) {
+            @for (category of previewCategories(); track category.key) {
               <span class="mini-chip">{{ category.label }}</span>
             }
           </div>
@@ -202,6 +202,86 @@
 <div class="web-grid web-grid--lower">
   <section class="card">
     <div class="card__head">
+      <h2 class="card__title">Control categories</h2>
+      <span class="soft card__count">
+        {{ visibleCategories().length }} of {{ categoryRows().length }} shown
+      </span>
+    </div>
+    <p class="card__hint">
+      Rename the categories and choose which ones visitors see. Every claim stays mapped to the same
+      five categories.
+    </p>
+    <div class="category-list">
+      @for (row of categoryRows(); track row.key) {
+        <div class="category-row" [attr.data-category]="row.key">
+          <label class="category-row__field">
+            <span class="field__label">
+              {{ defaultCategoryLabels[row.key] }} · {{ row.publicCount }} public
+              {{ row.publicCount === 1 ? 'control' : 'controls' }}
+            </span>
+            <input
+              class="input"
+              type="text"
+              [value]="row.label"
+              (change)="setCategoryLabel(row.key, $any($event.target).value)"
+            />
+          </label>
+          <button
+            type="button"
+            class="switch"
+            role="switch"
+            [attr.aria-checked]="row.visible"
+            [class.is-on]="row.visible"
+            [attr.aria-label]="'Show ' + row.label + ' on the public page'"
+            (click)="toggleCategory(row.key)"
+          >
+            <span></span>
+          </button>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card__head">
+      <h2 class="card__title">Subprocessors</h2>
+      <span class="soft card__count">
+        {{ publishedSubprocessors().length }} of {{ subprocessors().length }} published
+      </span>
+    </div>
+    <p class="card__hint">
+      Choose the vendors that appear on the public page. Unselected vendors stay in the workspace.
+    </p>
+    <div class="vendor-list">
+      @for (vendor of subprocessors(); track vendor.id) {
+        <div class="vendor-row" [attr.data-vendor]="vendor.id">
+          <span class="vendor-logo" [style.background]="vendor.accent">{{ vendor.initials }}</span>
+          <span class="vendor-copy">
+            <strong>{{ vendor.name }}</strong>
+            <span>{{ vendor.purpose }} · {{ vendor.region }}</span>
+          </span>
+          <button
+            type="button"
+            class="switch"
+            role="switch"
+            [attr.aria-checked]="settings().isSubprocessorPublished(vendor.id)"
+            [class.is-on]="settings().isSubprocessorPublished(vendor.id)"
+            [attr.aria-label]="'Show ' + vendor.name + ' on the public page'"
+            (click)="toggleSubprocessor(vendor.id)"
+          >
+            <span></span>
+          </button>
+        </div>
+      } @empty {
+        <p class="card__hint">No subprocessors are configured for this organization.</p>
+      }
+    </div>
+  </section>
+</div>
+
+<div class="web-grid web-grid--lower">
+  <section class="card">
+    <div class="card__head">
       <h2 class="card__title">Published claims</h2>
       <span class="soft" style="font-size: 12px">{{ claims().length }} claims</span>
     </div>
@@ -211,7 +291,7 @@
           <div class="claim__main">
             <p class="claim__title">{{ claim.title }}</p>
             <p class="claim__meta">
-              {{ categoryLabels[claim.category] }} · approved {{ formatDate(claim.approvedAt) }}
+              {{ categoryLabelFor(claim.category) }} · approved {{ formatDate(claim.approvedAt) }}
             </p>
           </div>
           <span class="vis" [class]="'vis vis--' + claim.visibility">

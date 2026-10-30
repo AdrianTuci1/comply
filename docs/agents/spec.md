@@ -38,7 +38,10 @@ Trei moduri de livrare:
 
 Pagină publică, read-only, per tenant, servită pe subdomeniu propriu (`trust.<domeniu>`). Conține doar ce alege tenantul: practici de securitate, subprocesatori, politici descărcabile, data ultimei revizuiri, contact pentru chestionare.
 
-Structura de prezentare este constantă și urmează referința din `docs/reference/trust-center/`:
+Structura de prezentare rămâne constantă și urmează referința din `docs/reference/trust-center/`. Tenantul controlează din portal ce apare: fiecare dintre cele cinci categorii de controale poate fi redenumită sau ascunsă, iar subprocesatorii se publică individual. Pagina publică afișează doar secțiunile care au conținut publicat.
+
+- Setările de prezentare stau în `TrustCenterSettings` (`categoryLabels`, `hiddenCategories`, `hiddenSubprocessors`) și se editează în `/portal/website`.
+- Toate cerințele din bibliotecă folosesc cele cinci chei de categorie (`infrastructure`, `organizational`, `product`, `procedures`, `data_privacy`); denumirile afișate sunt doar prezentare, nu schimbă maparea.
 
 - Topbar lipit sus, doar cu logo-ul încărcat de tenant (`logoUrl`). Nu afișează numele, inițialele, domeniul sau butoane ca text.
 - Header de prezentare: imaginea mare încărcată de tenant (`headerUrl`) înlocuiește zona hero cu „Trust center / Trust, built on evidence". Fără text peste imagine. Dacă lipsește, hero-ul folosește textul implicit.

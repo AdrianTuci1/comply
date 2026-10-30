@@ -66,6 +66,37 @@ describe('Organization (aggregate)', () => {
     expect(updated.trustCenter.logoUrl).toBe('/logos/nordwind.svg');
   });
 
+  it('normalizes the category and subprocessor presentation settings', () => {
+    const organization = Organization.restore(
+      snapshot({
+        trustCenter: {
+          domain: 'trust.nordwind.ro',
+          published: true,
+          showEvidence: true,
+          allowNda: true,
+          categoryLabels: { infrastructure: '  Infra  ', organizational: '   ' },
+          hiddenCategories: ['organizational', 'organizational'],
+          hiddenSubprocessors: [' s-1 ', 's-1', ''],
+        },
+      }),
+    );
+    const settings = organization.trustCenter;
+
+    expect(settings.categoryLabel('infrastructure', 'Infrastructure security')).toBe('Infra');
+    expect(settings.categoryLabel('organizational', 'Organizational security')).toBe(
+      'Organizational security',
+    );
+    expect(settings.isCategoryVisible('organizational')).toBe(false);
+    expect(settings.isCategoryVisible('infrastructure')).toBe(true);
+    expect(settings.hiddenSubprocessors).toEqual(['s-1']);
+    expect(settings.isSubprocessorPublished('s-1')).toBe(false);
+    expect(settings.isSubprocessorPublished('s-2')).toBe(true);
+
+    const updated = organization.withTrustCenter({ published: false });
+    expect(updated.trustCenter.hiddenCategories).toEqual(['organizational']);
+    expect(updated.trustCenter.categoryLabels).toEqual({ infrastructure: 'Infra' });
+  });
+
   it('rejects an invalid contact email', () => {
     expect(() => Organization.restore(snapshot({ contactEmail: 'not-an-email' }))).toThrow(
       DomainError,
